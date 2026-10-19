@@ -1,6 +1,9 @@
 const User = require('../models/User');
-const path = require('path');
-const fs   = require('fs');
+const {
+  storeAvatar,
+  removeAvatar,
+  StorageNotConfiguredError,
+} = require('../services/avatarStorage');
 
 // ─── GET /api/profile ─────────────────────────────────────────────────────────
 exports.getProfile = async (req, res) => {
@@ -44,16 +47,28 @@ exports.uploadAvatar = async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded.' });
     }
 
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    const stored = await storeAvatar({
+      buffer: req.file.buffer,
+      mimetype: req.file.mimetype,
+      userId: String(req.user._id),
+    });
+
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { avatarUrl },
+      { avatarUrl: stored.url },
       { new: true }
     );
 
-    res.json({ avatarUrl, user });
+    res.json({ avatarUrl: stored.url, user });
   } catch (err) {
-    res.status(500).json({ message: 'Server error.' });
+    if (err instanceof StorageNotConfiguredError) {
+      return res.status(503).json({ message: err.message });
+    }
+    if (err.status) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    console.error('Avatar upload error:', err);
+    res.status(500).json({ message: err.message || 'Server error.' });
   }
 };
 
@@ -62,15 +77,21 @@ exports.deleteAvatar = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (user.avatarUrl) {
-      const filePath = path.join(__dirname, '..', user.avatarUrl);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      // Removes the file from Cloudinary, Vercel Blob, or (in development)
+      // from disk. The record is cleared either way, so the profile is never
+      // left pointing at an avatar that no longer exists.
+      await removeAvatar(user.avatarUrl);
     }
 
-    user.avatarUrl = undefined;
+    user.avatarUrl = '';
     await user.save();
 
     res.json({ success: true, user });
   } catch (err) {
-    res.status(500).json({ message: 'Server error.' });
+    if (err instanceof StorageNotConfiguredError || err.status) {
+      return res.status(err.status || 503).json({ message: err.message });
+    }
+    console.error('Avatar delete error:', err);
+    res.status(500).json({ message: err.message || 'Server error.' });
   }
 };

@@ -7,7 +7,9 @@ const morgan = require('morgan');
 const dotenv = require('dotenv');
 const path = require('path');
 
-dotenv.config();
+// Explicit path: on Vercel the working directory is the project root, so a
+// bare dotenv.config() would look for /.env and silently load nothing.
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 
@@ -54,6 +56,11 @@ app.get('/api/health', (req, res) => {
   res.json({
     success: true,
     status: 'OK',
+    // 'connected' | 'connecting' | 'disconnected' — used to verify deployments
+    db: ['disconnected', 'connected', 'connecting', 'disconnecting'][
+      mongoose.connection.readyState
+    ],
+    storage: require('./services/avatarStorage').activeBackend(),
     timestamp: new Date(),
   });
 });
@@ -70,6 +77,18 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error(err.stack);
 
+  // Multer upload errors (file too large, unexpected field, …)
+  if (err.name === 'MulterError') {
+    const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+    return res.status(status).json({
+      success: false,
+      message:
+        err.code === 'LIMIT_FILE_SIZE'
+          ? 'Image is too large. Maximum size is 2MB.'
+          : err.message,
+    });
+  }
+
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal Server Error',
@@ -81,17 +100,42 @@ app.use((err, req, res, next) => {
 
 // ─── MongoDB Connection + Server Start ───────────────────────────────────────
 const PORT = process.env.PORT || 5000;
+const ON_VERCEL = Boolean(process.env.VERCEL);
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('✅ MongoDB connected successfully');
+if (!process.env.MONGO_URI) {
+  console.error('❌ MONGO_URI is not set. Set it in backend/.env (locally) or in the Vercel project environment variables.');
+}
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+// Retries instead of exiting: a serverless instance that process.exit()s on a
+// transient connection error is reported by Vercel as FUNCTION_INVOCATION_FAILED
+// on every single request, which hides the real problem.
+const connectWithRetry = (attempt = 1) => {
+  mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => {
+      console.log('✅ MongoDB connected successfully');
+
+      if (!ON_VERCEL) {
+        app.listen(PORT, () => {
+          console.log(`🚀 Server running on port ${PORT}`);
+        });
+      }
+    })
+    .catch((err) => {
+      console.error('❌ MongoDB connection error:', err.message);
+
+      if (ON_VERCEL && attempt < 5) {
+        const delay = Math.min(30000, 2 ** attempt * 1000);
+        console.error(`   Retrying in ${delay}ms (attempt ${attempt + 1}/5)…`);
+        setTimeout(() => connectWithRetry(attempt + 1), delay);
+        return;
+      }
+
+      if (!ON_VERCEL) process.exit(1);
     });
-  })
-  .catch((err) => {
-    console.error('❌ MongoDB connection error:', err.message);
-    process.exit(1);
-  });
+};
+
+connectWithRetry();
+
+// On Vercel the Express app itself is the function handler — no listen().
+module.exports = app;

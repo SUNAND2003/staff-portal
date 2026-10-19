@@ -1,0 +1,14 @@
+# Local secrets are never uploaded to Vercel.
+# Configure them in Project → Settings → Environment Variables instead:
+#   MONGO_URI, JWT_SECRET, JWT_EXPIRES_IN, NODE_ENV, FRONTEND_URL, PORT,
+#   CLOUDINARY_URL (or CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET),
+#   BLOB_READ_WRITE_TOKEN, AVATAR_STORAGE
+backend/.env
+
+# Vercel installs dependencies from package.json + package-lock.json at build
+# time, so committed or local node_modules copies are never part of the bundle.
+**/node_modules
+
+# Build artefacts are regenerated on Vercel.
+frontend/dist
+**/*.log

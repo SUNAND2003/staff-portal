@@ -1,9 +1,25 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 
 // ─── Protect route (must be logged in) ───────────────────────────────────────
 exports.protect = async (req, res, next) => {
   try {
+    // Fail fast with an actionable status instead of letting Mongoose buffer
+    // queries for 10s and then surface a generic 500.
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message:
+          'Database is not connected yet. Check the MONGO_URI environment variable and retry.',
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({
+        message: 'JWT_SECRET environment variable is not configured on the server.',
+      });
+    }
+
     let token;
 
     if (

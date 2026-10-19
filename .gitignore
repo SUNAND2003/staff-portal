@@ -1,0 +1,16 @@
+# Dependencies (installed from package.json at build time and locally)
+node_modules/
+
+# Build output
+frontend/dist
+frontend/dist-ssr
+
+# Runtime uploads - written to disk only when the API runs in development
+backend/uploads/
+
+# Vercel link / local settings
+.vercel/
+
+# Logs
+*.log
+npm-debug.log*

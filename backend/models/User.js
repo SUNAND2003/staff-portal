@@ -69,6 +69,14 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 20,
     },
+    // Uploaded profile picture URL (local /uploads/... path or an absolute
+    // Vercel Blob URL). Added because uploadAvatar() was already writing this
+    // field — without a schema path Mongoose dropped it silently (strict mode)
+    // and the avatar was never actually saved.
+    avatarUrl: {
+      type: String,
+      default: '',
+    },
     leaveBalance: {
       casual:    { type: Number, default: 12 },
       sick:      { type: Number, default: 10 },

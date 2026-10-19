@@ -1,5 +1,6 @@
 const Task = require('../models/Task');
 const User = require('../models/User');
+const mongoose = require('mongoose');
 
 
 // GET MY TASKS
@@ -37,6 +38,13 @@ exports.createTask = async (req, res) => {
     if (!title) {
       return res.status(400).json({
         message: 'Title is required',
+      });
+    }
+
+    // Mongoose would throw a CastError (HTTP 500) on a malformed id.
+    if (assignedTo && !mongoose.isValidObjectId(assignedTo)) {
+      return res.status(400).json({
+        message: 'assignedTo must be a valid user id.',
       });
     }
 
@@ -124,6 +132,9 @@ exports.updateTask = async (req, res) => {
     if (tags !== undefined) task.tags = tags;
 
     if (assignedTo && isAdminOrManager) {
+      if (!mongoose.isValidObjectId(assignedTo)) {
+        return res.status(400).json({ message: 'assignedTo must be a valid user id.' });
+      }
       task.assignedTo = assignedTo;
     }
 
