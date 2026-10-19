@@ -4,8 +4,8 @@ const User = require('../models/User');
 
 const SEED_USERS = [
   {
-    username: 'admin',
-    password: 'admin123',
+    username: 'Hexa',
+    password: 'Hexa@123',
     name: 'Admin User',
     role: 'admin',
     employeeId: 'HEXA-0001',
@@ -72,7 +72,7 @@ async function seed() {
     console.log('\n🌱 Seeding complete!');
     console.log('──────────────────────────────────────');
     console.log('Login credentials:');
-    console.log('  Admin:    admin / admin123');
+    console.log('  Admin:    Hexa / Hexa@123');
     console.log('  Manager:  manager / mgr123');
     console.log('  Employee: sunand / emp123');
     console.log('  Employee: employee / emp123');

@@ -30,7 +30,9 @@ const workingHoursSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Keep only one record per configuration
-workingHoursSchema.index({ _id: 1 }, { unique: true });
+// NOTE: An index on `_id` was removed here — MongoDB already enforces a unique
+// default `_id` index, so declaring it again only produced a Mongoose warning.
+// The config is kept to a single document by using findOne()/_id lookups in
+// configController, not by a special index.
 
 module.exports = mongoose.model('WorkingHours', workingHoursSchema);

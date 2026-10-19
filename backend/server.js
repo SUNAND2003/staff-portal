@@ -12,8 +12,21 @@ dotenv.config();
 const app = express();
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
+// FRONTEND_URL may hold several origins separated by commas, so local dev and
+// the deployed site can both talk to this API.
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+console.log('🔐 Allowed CORS origins:', allowedOrigins.join(' | '));
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // No Origin header (curl, server-to-server) is allowed through.
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(null, false);
+  },
   credentials: true,
 }));
 
