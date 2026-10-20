@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const { signToken } = require('../utils/jwt');
 
@@ -14,6 +15,16 @@ const sendToken = (user, statusCode, res) => {
 // ─── POST /api/auth/login ─────────────────────────────────────────────────────
 const login = async (req, res) => {
   try {
+    // No database means a deployment/configuration problem (missing or wrong
+    // MONGO_URI, Atlas network access). Report it as 503 with the actual cause
+    // instead of letting the query fail and returning a generic 500.
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database is not connected yet. Check the MONGO_URI environment variable and retry.',
+      });
+    }
+
     const { username, password } = req.body;
 
     if (!username || !password) {
