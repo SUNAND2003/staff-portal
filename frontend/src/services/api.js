@@ -1,19 +1,36 @@
 // ─── Real Backend API ─────────────────────────────────────────────────────────
-// VITE_API_URL is baked in at build time (see vite.config.js for the guard).
-// Strip trailing slashes: ".../api/" + "/auth/login" would otherwise produce
-// "/api//auth/login" and the backend would answer 404 "Route not found".
-const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/+$/, '');
+// Resolves and normalizes the backend API URL.
+// Accepts VITE_API_URL or VITE_API_BASE_URL.
+// Ensures the resulting BASE_URL always ends in '/api' without double slashes:
+//   "https://staff-portal-tool.onrender.com"     -> "https://staff-portal-tool.onrender.com/api"
+//   "https://staff-portal-tool.onrender.com/"    -> "https://staff-portal-tool.onrender.com/api"
+//   "https://staff-portal-tool.onrender.com/api" -> "https://staff-portal-tool.onrender.com/api"
+export const getBaseApiUrl = () => {
+  const envUrl = (
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    'http://localhost:5000/api'
+  ).trim();
 
-// Join the base URL and an endpoint path with EXACTLY one slash between them,
-// no matter what either side looks like:
-//   buildUrl('/auth/login')  -> https://host/api/auth/login
-//   buildUrl('auth/login')   -> https://host/api/auth/login   (leading slash optional)
-//   buildUrl('//auth/login') -> https://host/api/auth/login   (extra slashes removed)
-// This makes `/api//auth/login` impossible to produce from this client.
+  const stripped = envUrl.replace(/\/+$/, '');
+  return stripped.endsWith('/api') ? stripped : `${stripped}/api`;
+};
+
+const BASE_URL = getBaseApiUrl();
+
+// Join the base URL and an endpoint path safely:
+// Handles '/auth/login', 'auth/login', '/api/auth/login', etc.
 const buildUrl = (path) => {
-  const cleanPath = String(path)
+  let cleanPath = String(path)
+    .trim()
     .replace(/^\/+/, '')      // no leading slash on the path
     .replace(/\/{2,}/g, '/'); // no doubled slashes inside it
+
+  // If path already starts with 'api/', strip it because BASE_URL already ends with '/api'
+  if (cleanPath.startsWith('api/')) {
+    cleanPath = cleanPath.slice(4);
+  }
+
   return `${BASE_URL}/${cleanPath}`;
 };
 
@@ -60,10 +77,7 @@ const request = async (method, path, body = null, isFormData = false) => {
         throw new Error(data.message || 'Session expired. Please login again.');
       }
 
-      // No token was sent, so this is an unauthenticated call — most commonly a
-      // failed login attempt. Show the server's real message ("Invalid username
-      // or password.") instead of wiping state and reloading the page, which is
-      // what used to happen and made every auth error look like a blank flash.
+      // No token was sent, so this is an unauthenticated call — failed login attempt.
       throw new Error(data.message || 'Invalid username or password.');
     }
 
@@ -72,8 +86,17 @@ const request = async (method, path, body = null, isFormData = false) => {
       throw new Error(data.message || 'Access denied. You do not have permission.');
     }
 
-    // Handle other error responses — the backend's own message is shown verbatim
-    // (e.g. "Route not found", "Database is not connected yet").
+    // Handle service unavailable / database not connected (503)
+    if (res.status === 503) {
+      throw new Error(data.message || 'Database is connecting. Please retry in a moment.');
+    }
+
+    // Handle route not found (404)
+    if (res.status === 404) {
+      throw new Error(data.message || 'Requested API endpoint was not found.');
+    }
+
+    // Handle other error responses
     if (!res.ok) {
       throw new Error(data.message || `Request failed with status ${res.status}`);
     }
@@ -82,8 +105,6 @@ const request = async (method, path, body = null, isFormData = false) => {
   } catch (error) {
     // A TypeError from fetch means the request never got a response: the server
     // was unreachable, the URL is wrong, or the response was blocked by CORS.
-    // Report that accurately (and log the exact target so it can be diagnosed)
-    // instead of labelling every failure a generic network problem.
     if (
       error instanceof TypeError &&
       /fetch|network|load failed/i.test(error.message || '')

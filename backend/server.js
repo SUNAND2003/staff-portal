@@ -46,6 +46,8 @@ app.use(cors({
   origin: (origin, callback) => {
     // No Origin header (curl, server-to-server) is allowed through.
     if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    // Allow any Vercel deployment (*.vercel.app)
+    if (/^https:\/\/([a-zA-Z0-9_-]+\.)*vercel\.app$/.test(origin)) return callback(null, true);
     // Without this header the browser blocks the response and the app reports a
     // generic "Network error" — log the offending origin so the cause is visible
     // in the Render logs instead of being invisible.
@@ -70,20 +72,20 @@ app.use(morgan('dev'));
 // ─── Static uploads ───────────────────────────────────────────────────────────
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/employees', require('./routes/employees'));
-app.use('/api/attendance', require('./routes/attendance'));
-app.use('/api/attendance', require('./routes/punch'));
-app.use('/api/leaves', require('./routes/leaves'));
-app.use('/api/tasks', require('./routes/tasks'));
-app.use('/api/worklogs', require('./routes/worklogs'));
-app.use('/api/reports', require('./routes/reports'));
-app.use('/api/profile', require('./routes/profile'));
-app.use('/api/config', require('./routes/config'));
+// ─── Route Handlers ───────────────────────────────────────────────────────────
+const authRoutes = require('./routes/auth');
+const employeeRoutes = require('./routes/employees');
+const attendanceRoutes = require('./routes/attendance');
+const punchRoutes = require('./routes/punch');
+const leaveRoutes = require('./routes/leaves');
+const taskRoutes = require('./routes/tasks');
+const worklogRoutes = require('./routes/worklogs');
+const reportRoutes = require('./routes/reports');
+const profileRoutes = require('./routes/profile');
+const configRoutes = require('./routes/config');
 
-// ─── Health Check ─────────────────────────────────────────────────────────────
-app.get('/api/health', (req, res) => {
+// ─── Health & Status Check ────────────────────────────────────────────────────
+const healthCheckHandler = (req, res) => {
   res.json({
     success: true,
     status: 'OK',
@@ -94,7 +96,43 @@ app.get('/api/health', (req, res) => {
     storage: require('./services/avatarStorage').activeBackend(),
     timestamp: new Date(),
   });
+};
+
+app.get('/api/health', healthCheckHandler);
+app.get('/health', healthCheckHandler);
+
+// Root endpoint for simple browser verification
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'HexaHR Staff Portal API is active',
+    health: '/api/health',
+  });
 });
+
+// ─── Primary /api Routes ──────────────────────────────────────────────────────
+app.use('/api/auth', authRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/attendance', punchRoutes);
+app.use('/api/leaves', leaveRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/worklogs', worklogRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/config', configRoutes);
+
+// ─── Direct Aliases (supports requests called with or without /api prefix) ────
+app.use('/auth', authRoutes);
+app.use('/employees', employeeRoutes);
+app.use('/attendance', attendanceRoutes);
+app.use('/attendance', punchRoutes);
+app.use('/leaves', leaveRoutes);
+app.use('/tasks', taskRoutes);
+app.use('/worklogs', worklogRoutes);
+app.use('/reports', reportRoutes);
+app.use('/profile', profileRoutes);
+app.use('/config', configRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((req, res) => {
