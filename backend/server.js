@@ -16,17 +16,32 @@ const app = express();
 // ─── Middleware ───────────────────────────────────────────────────────────────
 // FRONTEND_URL may hold several origins separated by commas, so local dev and
 // the deployed site can both talk to this API.
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+const configuredOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);
 
-console.log('🔐 Allowed CORS origins:', allowedOrigins.join(' | '));
+// Local dev must keep working even when FRONTEND_URL only lists production
+// origins — these can only be sent by a page running on this machine, so they
+// are safe to allow unconditionally.
+const devOrigins = [
+  'http://localhost:5173',
+  'http://localhost:4173',
+  'http://127.0.0.1:5173',
+];
+
+const allowedOrigins = new Set([...configuredOrigins, ...devOrigins]);
+
+console.log('🔐 Allowed CORS origins:', configuredOrigins.join(' | '), '| local dev always allowed');
 
 app.use(cors({
   origin: (origin, callback) => {
     // No Origin header (curl, server-to-server) is allowed through.
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    // Without this header the browser blocks the response and the app reports a
+    // generic "Network error" — log the offending origin so the cause is visible
+    // in the Render logs instead of being invisible.
+    console.warn(`⛔ CORS blocked origin: ${origin} — add it to the FRONTEND_URL environment variable.`);
     return callback(null, false);
   },
   credentials: true,

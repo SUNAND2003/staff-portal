@@ -1,7 +1,8 @@
 // ─── Real Backend API ─────────────────────────────────────────────────────────
-// Replaces all mock functions with real calls to http://localhost:5000/api
-
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// VITE_API_URL is baked in at build time (see vite.config.js for the guard).
+// Strip trailing slashes: ".../api/" + "/auth/login" would otherwise produce
+// "/api//auth/login" and the backend would answer 404 "Route not found".
+const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/+$/, '');
 
 // ─── HTTP Helper ──────────────────────────────────────────────────────────────
 
@@ -33,16 +34,24 @@ const request = async (method, path, body = null, isFormData = false) => {
 
     // Handle authentication errors (401)
     if (res.status === 401) {
-      // Clear auth on 401 - user must re-login
-      localStorage.removeItem('auth-storage');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      sessionStorage.clear();
-      // Redirect to login on 401
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+      if (token) {
+        // An authenticated request was rejected -> the session really expired.
+        // Clear auth and send the user back to the login screen.
+        localStorage.removeItem('auth-storage');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        sessionStorage.clear();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        throw new Error(data.message || 'Session expired. Please login again.');
       }
-      throw new Error(data.message || 'Session expired. Please login again.');
+
+      // No token was sent, so this is an unauthenticated call — most commonly a
+      // failed login attempt. Show the server's real message ("Invalid username
+      // or password.") instead of wiping state and reloading the page, which is
+      // what used to happen and made every auth error look like a blank flash.
+      throw new Error(data.message || 'Invalid username or password.');
     }
 
     // Handle authorization errors (403)
@@ -50,16 +59,29 @@ const request = async (method, path, body = null, isFormData = false) => {
       throw new Error(data.message || 'Access denied. You do not have permission.');
     }
 
-    // Handle other error responses
+    // Handle other error responses — the backend's own message is shown verbatim
+    // (e.g. "Route not found", "Database is not connected yet").
     if (!res.ok) {
       throw new Error(data.message || `Request failed with status ${res.status}`);
     }
 
     return data;
   } catch (error) {
-    // Handle network errors
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('Network error. Please check your connection.');
+    // A TypeError from fetch means the request never got a response: the server
+    // was unreachable, the URL is wrong, or the response was blocked by CORS.
+    // Report that accurately (and log the exact target so it can be diagnosed)
+    // instead of labelling every failure a generic network problem.
+    if (
+      error instanceof TypeError &&
+      /fetch|network|load failed/i.test(error.message || '')
+    ) {
+      const host = BASE_URL.replace(/^https?:\/\//, '').split('/')[0];
+      console.error(`API request failed: ${method} ${BASE_URL}${path}`, error);
+      throw new Error(
+        `Network error: the server at ${host} could not be reached. ` +
+          'Please check your connection and try again.',
+        { cause: error }
+      );
     }
     throw error;
   }
