@@ -4,6 +4,19 @@
 // "/api//auth/login" and the backend would answer 404 "Route not found".
 const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/+$/, '');
 
+// Join the base URL and an endpoint path with EXACTLY one slash between them,
+// no matter what either side looks like:
+//   buildUrl('/auth/login')  -> https://host/api/auth/login
+//   buildUrl('auth/login')   -> https://host/api/auth/login   (leading slash optional)
+//   buildUrl('//auth/login') -> https://host/api/auth/login   (extra slashes removed)
+// This makes `/api//auth/login` impossible to produce from this client.
+const buildUrl = (path) => {
+  const cleanPath = String(path)
+    .replace(/^\/+/, '')      // no leading slash on the path
+    .replace(/\/{2,}/g, '/'); // no doubled slashes inside it
+  return `${BASE_URL}/${cleanPath}`;
+};
+
 // ─── HTTP Helper ──────────────────────────────────────────────────────────────
 
 const getToken = () => {
@@ -29,7 +42,7 @@ const request = async (method, path, body = null, isFormData = false) => {
   };
 
   try {
-    const res = await fetch(`${BASE_URL}${path}`, options);
+    const res = await fetch(buildUrl(path), options);
     const data = await res.json().catch(() => ({}));
 
     // Handle authentication errors (401)
@@ -76,7 +89,7 @@ const request = async (method, path, body = null, isFormData = false) => {
       /fetch|network|load failed/i.test(error.message || '')
     ) {
       const host = BASE_URL.replace(/^https?:\/\//, '').split('/')[0];
-      console.error(`API request failed: ${method} ${BASE_URL}${path}`, error);
+      console.error(`API request failed: ${method} ${buildUrl(path)}`, error);
       throw new Error(
         `Network error: the server at ${host} could not be reached. ` +
           'Please check your connection and try again.',

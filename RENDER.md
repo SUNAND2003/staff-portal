@@ -49,7 +49,7 @@ ones the service sees.
 |---|---|---|---|
 | `MONGO_URI` | ✅ | `mongodb+srv://<user>:<pass>@<cluster>/<db>` | MongoDB Atlas connection string. `MONGODB_URI` is accepted as an alias — set **one** of the two, never both. |
 | `JWT_SECRET` | ✅ | a long random string | Signs auth tokens. **Rotate it**: the old value was committed to this public repository in `backend/.env` history. |
-| `FRONTEND_URL` | ✅ | `https://hexaportal.vercel.app` | Comma-separated CORS allow-list of **deployed frontend origins**. `http://localhost:5173` / `:4173` are always allowed for local dev, so they no longer need to be listed. A blocked origin is logged as `⛔ CORS blocked origin: …` in the Render logs. |
+| `FRONTEND_URL` | ✅ | `https://hexaportal.vercel.app,https://staffportal-hx6zg5sd0-hexa-branding.vercel.app` | Comma-separated CORS allow-list of **deployed frontend origins**. `http://localhost:5173` / `:4173` are always allowed for local dev, so they no longer need to be listed. A blocked origin is logged as `⛔ CORS blocked origin: …` in the Render logs. |
 | `NODE_VERSION` | optional | `24.21.0` | Pins Node; `backend/.nvmrc` already does this. |
 | `NODE_ENV` | optional | `production` | Keeps stack traces out of API error responses. |
 | `JWT_EXPIRES_IN` | optional | `7d` | Default when unset. |

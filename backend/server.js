@@ -21,6 +21,14 @@ const configuredOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
   .map((o) => o.trim())
   .filter(Boolean);
 
+// Production frontends allowed unconditionally, so the deployed UI keeps working
+// even before FRONTEND_URL is updated in the Render dashboard. Origins only —
+// never credentials. Add new frontends here and/or to FRONTEND_URL.
+const knownOrigins = [
+  'https://staffportal-hx6zg5sd0-hexa-branding.vercel.app',
+  'https://hexaportal.vercel.app',
+];
+
 // Local dev must keep working even when FRONTEND_URL only lists production
 // origins — these can only be sent by a page running on this machine, so they
 // are safe to allow unconditionally.
@@ -30,9 +38,9 @@ const devOrigins = [
   'http://127.0.0.1:5173',
 ];
 
-const allowedOrigins = new Set([...configuredOrigins, ...devOrigins]);
+const allowedOrigins = new Set([...configuredOrigins, ...knownOrigins, ...devOrigins]);
 
-console.log('🔐 Allowed CORS origins:', configuredOrigins.join(' | '), '| local dev always allowed');
+console.log('🔐 Allowed CORS origins:', [...allowedOrigins].join(' | '));
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -45,6 +53,14 @@ app.use(cors({
     return callback(null, false);
   },
   credentials: true,
+  // Preflight (OPTIONS) is answered by this middleware directly, before any
+  // route or auth middleware runs. Declare the methods and headers the app
+  // actually uses: JSON bodies and bearer-token auth.
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  // Cache the preflight result for 10 minutes so browsers do not send an
+  // OPTIONS request before every API call.
+  maxAge: 600,
 }));
 
 app.use(express.json());
