@@ -73,8 +73,16 @@ const ADMIN = { user: process.env.TEST_ADMIN_USER || 'hexa', pass: process.env.T
       `count=${beforeCount} status=${before.status}`);
 
     // ---------- health ----------
-    r = await req('GET', '/health');
-    check('GET /health reports db + storage', r.status === 200 && r.data.db === 'connected' && !!r.data.storage,
+    // The API now binds its port immediately (so PaaS health checks pass while
+    // MongoDB is still connecting), so wait for the connection to be ready
+    // before asserting db === 'connected'.
+    let health = null;
+    for (let i = 0; i < 60; i++) {
+      r = await req('GET', '/health');
+      if (r.status === 200 && r.data && r.data.db === 'connected') { health = r.data; break; }
+      await new Promise((res) => setTimeout(res, 500));
+    }
+    check('GET /health reports db + storage', !!health && !!health.storage,
       `db=${r.data && r.data.db} storage=${r.data && r.data.storage}`);
 
     // ---------- auth ----------

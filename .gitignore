@@ -1,6 +1,12 @@
 # Dependencies (installed from package.json at build time and locally)
 node_modules/
 
+# Environment variables — NEVER commit secrets (this repository is public).
+# backend/.env must stay untracked; backend/.env.example is the safe template.
+.env
+.env.*
+!.env.example
+
 # Build output
 frontend/dist
 frontend/dist-ssr

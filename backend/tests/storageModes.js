@@ -121,7 +121,7 @@ async function uploadScenario(label, port) {
   console.log('\n=== STORAGE CONFIGURATION CHECKS ===');
   let pass = 0;
   for (const x of results) {
-    console.log(`${x.ok ? 'PASS' : 'FAIL'}  ${x.n}${x.info ? '  [' + x.info + ']' : ''}`);
+    console.log(`${x.ok ? 'PASS' : 'FAIL'}  ${x.name}${x.info ? '  [' + x.info + ']' : ''}`);
     if (x.ok) pass++;
   }
   console.log(`\n${pass}/${results.length} checks passed`);
