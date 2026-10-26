@@ -2,10 +2,13 @@
   "name": "hexahr-staff-portal",
   "private": true,
   "version": "1.0.0",
-  "description": "Repository root package.json. Declares the backend as an npm workspace so Vercel installs its dependencies before building api/app.js.",
   "workspaces": [
+    "frontend",
     "backend"
   ],
+  "scripts": {
+    "build": "npm run build --workspace frontend"
+  },
   "engines": {
     "node": ">=20"
   }
