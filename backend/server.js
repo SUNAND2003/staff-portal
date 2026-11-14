@@ -1,4 +1,15 @@
-require('dns').setDefaultResultOrder('ipv4first');
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+
+// In local Windows / ISP environments (e.g. Jio/Reliance/Airtel), Node's c-ares
+// resolver fails SRV lookups (querySrv ECONNREFUSED) against local router IPv6 DNS.
+// Setting public fallback DNS servers (Google 8.8.8.8, Cloudflare 1.1.1.1) guarantees
+// reliable MongoDB Atlas SRV resolution locally and in cloud containers.
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+} catch {
+  // Ignore if custom DNS servers cannot be set
+}
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -7,26 +18,36 @@ const morgan = require('morgan');
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Explicit path: on Vercel the working directory is the project root, so a
-// bare dotenv.config() would look for /.env and silently load nothing.
+// Explicit path: load local .env if present (ignored on production if absent)
 dotenv.config({ path: path.join(__dirname, '.env') });
+
+// Detect deployment environment: Render provides RENDER=true automatically
+const isRender = Boolean(process.env.RENDER || process.env.RENDER_SERVICE_ID);
+if (isRender || process.env.VERCEL) {
+  // Ensure production mode on Render and Vercel deployments
+  process.env.NODE_ENV = 'production';
+} else if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'development';
+}
+const isProduction = process.env.NODE_ENV === 'production' || isRender;
 
 const app = express();
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 // FRONTEND_URL may hold several origins separated by commas, so local dev and
-// the deployed site can both talk to this API.
+// the deployed site can both talk to this API. Trailing slashes are stripped
+// to prevent CORS origin mismatch with browser origin headers.
 const configuredOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
   .split(',')
-  .map((o) => o.trim())
+  .map((o) => o.trim().replace(/\/+$/, ''))
   .filter(Boolean);
 
 // Production frontends allowed unconditionally, so the deployed UI keeps working
 // even before FRONTEND_URL is updated in the Render dashboard. Origins only —
 // never credentials. Add new frontends here and/or to FRONTEND_URL.
 const knownOrigins = [
-  'https://staffportal-hx6zg5sd0-hexa-branding.vercel.app',
   'https://hexaportal.vercel.app',
+  'https://staffportal-hx6zg5sd0-hexa-branding.vercel.app',
 ];
 
 // Local dev must keep working even when FRONTEND_URL only lists production
@@ -44,10 +65,12 @@ console.log('🔐 Allowed CORS origins:', [...allowedOrigins].join(' | '));
 
 app.use(cors({
   origin: (origin, callback) => {
-    // No Origin header (curl, server-to-server) is allowed through.
-    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    // No Origin header (curl, server-to-server, Render health check) is allowed through.
+    if (!origin) return callback(null, true);
+    const cleanOrigin = origin.trim().replace(/\/+$/, '');
+    if (allowedOrigins.has(cleanOrigin) || allowedOrigins.has(origin)) return callback(null, true);
     // Allow any Vercel deployment (*.vercel.app)
-    if (/^https:\/\/([a-zA-Z0-9_-]+\.)*vercel\.app$/.test(origin)) return callback(null, true);
+    if (/^https:\/\/([a-zA-Z0-9_-]+\.)*vercel\.app$/.test(cleanOrigin)) return callback(null, true);
     // Without this header the browser blocks the response and the app reports a
     // generic "Network error" — log the offending origin so the cause is visible
     // in the Render logs instead of being invisible.
@@ -177,22 +200,58 @@ const HOST = process.env.HOST || '0.0.0.0';
 const ON_VERCEL = Boolean(process.env.VERCEL);
 
 // The same code runs on Render, on Vercel and locally, so accept either variable
-// name — MONGODB_URI (Render convention) or MONGO_URI (this project's original
-// name, used by backend/.env, the seed script and the tests). Neither value is
-// ever written to the logs; only a credential-masked host is.
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
-const maskUri = (uri) => uri.replace(/\/\/[^@/]*@/, '//<credentials>@');
+// name — MONGO_URI (this project's original name) or MONGODB_URI (Render convention).
+// Trim whitespace and remove any accidental surrounding quotes.
+const rawMongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+const cleanMongoUri = typeof rawMongoUri === 'string'
+  ? rawMongoUri.trim().replace(/^["']|["']$/g, '')
+  : '';
+
+// Helper to test if a URI points to localhost / loopback address
+const isLocalhostUri = (uri) => {
+  if (!uri || typeof uri !== 'string') return false;
+  return /localhost|127\.0\.0\.1|0\.0\.0\.0|::1/i.test(uri);
+};
+
+// Safe URI credential masking for both standard (mongodb://) and DNS SRV (mongodb+srv://)
+const maskUri = (uri) => {
+  if (!uri || typeof uri !== 'string') return '';
+  return uri.replace(/\/\/[^@/]+@/, '//<credentials>@');
+};
+
+// Error message / log string sanitizer to avoid credential leaks
+const sanitizeLog = (val) => {
+  if (!val) return '';
+  const str = typeof val === 'string' ? val : (val.message || String(val));
+  return str.replace(/\/\/[^@/]+@/g, '//<credentials>@');
+};
+
+// Determine active MONGO_URI, strictly disallowing localhost in production
+let MONGO_URI = cleanMongoUri;
+let mongoConfigError = null;
+
+if (!MONGO_URI) {
+  mongoConfigError = isProduction
+    ? '❌ CRITICAL CONFIGURATION ERROR: MONGO_URI (or MONGODB_URI) is not configured in Render environment variables.\n' +
+      '   In production, you must set MONGO_URI to your MongoDB Atlas connection string (mongodb+srv://...).'
+    : '⚠️  MONGO_URI is not set. In local development, configure MONGO_URI in backend/.env.';
+} else if (isProduction && isLocalhostUri(MONGO_URI)) {
+  mongoConfigError =
+    `❌ CRITICAL PRODUCTION MISCONFIGURATION: MONGO_URI is pointing to localhost (${maskUri(MONGO_URI)}).\n` +
+    `   Render web services run in cloud containers and cannot connect to localhost or 127.0.0.1:27017.\n` +
+    `   Localhost fallback is strictly rejected in production to prevent ECONNREFUSED loops.\n` +
+    `   ACTION REQUIRED: In your Render dashboard (Environment tab), update MONGO_URI to your\n` +
+    `   MongoDB Atlas connection string (e.g. mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/hexahr).`;
+  // In production, do not attempt to connect to localhost
+  MONGO_URI = null;
+}
 
 // ─── Environment sanity check ────────────────────────────────────────────────
 // Startup must never look healthy when it is not: every misconfiguration is
 // reported loudly here, and /api/health keeps reporting db:"disconnected"
 // until the connection really exists.
-if (!MONGO_URI) {
-  console.error(
-    '❌ MONGO_URI (or MONGODB_URI) is not set. Define it in backend/.env for ' +
-      'local runs, or in the Render service environment variables. The API ' +
-      'will still boot, but every database route answers 503 until it exists.'
-  );
+if (mongoConfigError) {
+  console.error(mongoConfigError);
 } else {
   console.log(`🗄️  MongoDB target: ${maskUri(MONGO_URI)}`);
 }
@@ -221,7 +280,7 @@ mongoose.connection
   .on('connected', () => console.log('✅ MongoDB connected successfully'))
   .on('disconnected', () => console.warn('⚠️  MongoDB disconnected'))
   .on('reconnected', () => console.log('🔁 MongoDB reconnected'))
-  .on('error', (err) => console.error('❌ MongoDB error:', err.message));
+  .on('error', (err) => console.error('❌ MongoDB error:', sanitizeLog(err.message)));
 
 // ─── HTTP server ─────────────────────────────────────────────────────────────
 let server;
@@ -244,45 +303,57 @@ const startServer = () => {
 };
 
 // ─── MongoDB connect with retry ──────────────────────────────────────────────
-// On a long-running host (Render, a VM, local dev) we retry forever with a capped
+// On a long-running host (Render, a VM, local dev) we retry with a capped
 // backoff instead of process.exit(1): an exit only produces a restart loop that
-// hides the real cause — usually the Atlas network-access list or the credentials.
+// hides the real cause — usually the Atlas network-access list or credentials.
 // On Vercel (serverless) we stop after 5 attempts but keep the process alive,
 // because a crashing function is reported as FUNCTION_INVOCATION_FAILED.
 const MAX_VERCEL_ATTEMPTS = 5;
 
 const connectWithRetry = (attempt = 1) => {
   if (!MONGO_URI) {
-    console.error('⏭️  Skipping MongoDB connection: no connection string configured.');
+    if (mongoConfigError && isProduction) {
+      console.error('⏭️  Skipping MongoDB connection: invalid or missing production MONGO_URI.');
+    } else {
+      console.error('⏭️  Skipping MongoDB connection: no connection string configured.');
+    }
     return;
   }
 
+  const mongooseOptions = {
+    serverSelectionTimeoutMS: 10000, // Timeout after 10s if cluster is unreachable
+    socketTimeoutMS: 45000,          // Close inactive sockets after 45s
+  };
+
   mongoose
-    .connect(MONGO_URI)
-    .then(() => {
+    .connect(MONGO_URI, mongooseOptions)
+    .then((conn) => {
+      console.log(`✅ MongoDB connected successfully to host: ${conn.connection.host}`);
       // Vercel provides the listener itself; everywhere else we already started
       // listening above (and startServer() is a no-op if we did).
       if (!ON_VERCEL) startServer();
     })
     .catch((err) => {
-      console.error(`❌ MongoDB connection error (attempt ${attempt}): ${err.message}`);
+      const safeErrorMsg = sanitizeLog(err.message);
+      console.error(`❌ MongoDB connection error (attempt ${attempt}): ${safeErrorMsg}`);
 
       // Actionable hints for the failures we actually hit in production.
       if (/querySrvENOTFOUND|getaddrinfo|ENOTFOUND|DNS/i.test(err.message)) {
         console.error(
-          '   Hint: the hostname did not resolve. Check the Atlas connection string,\n' +
-            '         e.g. mongodb+srv://user:pass@cluster0.xxxxx.mongodb.net/hexahr'
+          '   Hint: DNS SRV lookup failed. Check the Atlas connection string in Render,\n' +
+            '         e.g. mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/hexahr'
         );
       } else if (/auth|credential|Authentication failed/i.test(err.message)) {
         console.error(
-          '   Hint: Atlas rejected the credentials. Check Database Access → the\n' +
-            '         database user and password (passwords with special characters\n' +
-            '         must be URL-encoded in the connection string).'
+          '   Hint: Atlas rejected credentials. Check Database Access in MongoDB Atlas:\n' +
+            '         1. Verify database username and password.\n' +
+            '         2. Ensure the user has "Read and write to any database" role.\n' +
+            '         3. Passwords with special characters (@, :, /, ?, #) must be URL-encoded.'
         );
       } else if (/ip|timed out|timeout|ECONNREFUSED|ETIMEDOUT|ECONNRESET/i.test(err.message)) {
         console.error(
-          "   Hint: the Atlas cluster could not be reached. In MongoDB Atlas →\n" +
-            '         Network Access, allow Render\'s IPs (or 0.0.0.0/0 while testing).'
+          "   Hint: The Atlas cluster could not be reached (Network Access / Firewall).\n" +
+            '         In MongoDB Atlas → Network Access, allow Render\'s IPs (or 0.0.0.0/0 while testing).'
         );
       }
 
@@ -291,7 +362,7 @@ const connectWithRetry = (attempt = 1) => {
         return;
       }
 
-      const delay = Math.min(30000, 2 ** attempt * 1000);
+      const delay = Math.min(30000, 2 ** Math.min(attempt, 5) * 1000);
       console.error(`   Retrying in ${Math.round(delay / 1000)}s…`);
       setTimeout(() => connectWithRetry(attempt + 1), delay);
     });

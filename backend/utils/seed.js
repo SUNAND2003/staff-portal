@@ -1,3 +1,11 @@
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+} catch {
+  // Ignore
+}
+
 require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('../models/User');
@@ -55,7 +63,9 @@ const SEED_USERS = [
 
 async function seed() {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
+    if (!uri) throw new Error('MONGO_URI (or MONGODB_URI) is not defined in environment variables.');
+    await mongoose.connect(uri);
     console.log('Connected to MongoDB');
 
     // Drop existing users
@@ -78,7 +88,8 @@ async function seed() {
     console.log('  Employee: employee / emp123');
     console.log('──────────────────────────────────────');
   } catch (err) {
-    console.error('Seed error:', err.message);
+    const safeMsg = (err.message || '').replace(/\/\/[^@/]+@/g, '//<credentials>@');
+    console.error('Seed error:', safeMsg);
   } finally {
     await mongoose.disconnect();
   }

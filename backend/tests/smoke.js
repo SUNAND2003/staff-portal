@@ -204,7 +204,8 @@ const ADMIN = { user: process.env.TEST_ADMIN_USER || 'hexa', pass: process.env.T
   } finally {
     // ---------- cleanup: only records this run created ----------
     const mongoose = require('mongoose');
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/hexahr');
+    const uri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/hexahr';
+    await mongoose.connect(uri);
     const User = require('../models/User');
     const Punch = require('../models/Punch');
     const Attendance = require('../models/Attendance');
