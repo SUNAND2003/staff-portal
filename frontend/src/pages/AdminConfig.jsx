@@ -30,11 +30,6 @@ export default function AdminConfig() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Load working hours configuration
-  useEffect(() => {
-    loadConfig();
-  }, []);
-
   const loadConfig = async () => {
     try {
       setLoading(true);
@@ -56,6 +51,11 @@ export default function AdminConfig() {
       setLoading(false);
     }
   };
+
+  // Load working hours configuration
+  useEffect(() => {
+    loadConfig();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

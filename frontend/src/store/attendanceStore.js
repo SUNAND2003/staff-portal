@@ -30,8 +30,21 @@ export const useAttendanceStore = create((set, get) => ({
   recordPunch: async (action, status = null) => {
     set({ isRecording: true, error: null });
     try {
-      const response = await attendanceAPI.checkIn();
-      if (response?.success) {
+      const act = (action || '').toLowerCase();
+      let response;
+      if (act === 'checkin' || act === 'punch in' || act === 'in') {
+        response = await attendanceAPI.checkIn();
+      } else if (act === 'checkout' || act === 'punch out' || act === 'out') {
+        response = await attendanceAPI.checkOut();
+      } else if (act.includes('break') && (act.includes('start') || act.includes('in'))) {
+        response = await attendanceAPI.breakStart();
+      } else if (act.includes('break') && (act.includes('end') || act.includes('out'))) {
+        response = await attendanceAPI.breakEnd();
+      } else {
+        response = await punchAPI.recordPunch({ action, status });
+      }
+
+      if (response?.success !== false) {
         // Refresh attendance data from server
         await get().fetchTodayAttendance();
         set({ isRecording: false });

@@ -190,10 +190,6 @@ function EmployeeReportView({ filterType, startDate, endDate }) {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
-  useEffect(() => {
-    loadReport();
-  }, [filterType, startDate, endDate]);
-
   const loadReport = async () => {
     setLoading(true);
     try {
@@ -207,6 +203,10 @@ function EmployeeReportView({ filterType, startDate, endDate }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadReport();
+  }, [filterType, startDate, endDate]);
 
   const handleExport = () => {
     if (!report) return;

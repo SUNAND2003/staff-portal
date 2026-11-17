@@ -97,7 +97,7 @@ function TaskRow({ task, onEdit, onDelete, onStatusChange }) {
         <select
           value={normaliseStatus(task.status)}
           onChange={(e) => onStatusChange(task._id, e.target.value)}
-          className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 outline-none focus:border-indigo-400"
+          className={`rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-semibold outline-none focus:border-indigo-400 ${status.cls}`}
         >
           {Object.entries(STATUS_STYLES).map(([val, { label }]) => (
             <option key={val} value={val}>{label}</option>

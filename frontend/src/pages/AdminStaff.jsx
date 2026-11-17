@@ -73,11 +73,6 @@ export default function AdminStaff() {
     role: "employee",
   });
 
-  // Load employees on mount
-  useEffect(() => {
-    refresh();
-  }, []);
-
   const refresh = async () => {
     try {
       setInitialLoading(true);
@@ -90,6 +85,11 @@ export default function AdminStaff() {
       setInitialLoading(false);
     }
   };
+
+  // Load employees on mount
+  useEffect(() => {
+    refresh();
+  }, []);
 
   function handleChange(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));

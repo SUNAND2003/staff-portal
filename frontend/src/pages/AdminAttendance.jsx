@@ -44,7 +44,6 @@ export default function AdminAttendance() {
   const [loading,           setLoading]           = useState(true);
   const [exporting,         setExporting]         = useState(false);
   const [exportingPunch,    setExportingPunch]    = useState(false);
-  const [exportAllDates,    setExportAllDates]    = useState(false);
   const [exportMode,        setExportMode]        = useState("range"); // "range" | "month" | "all"
   const [exportMonth,       setExportMonth]       = useState(() => {
     const n = new Date();
@@ -479,7 +478,7 @@ useEffect(() => {
                       <button
                         key={key}
                         type="button"
-                        onClick={() => { setExportMode(key); setExportAllDates(key === "all"); setSelectedEmployee(null); setEmpSearch(""); }}
+                        onClick={() => { setExportMode(key); setSelectedEmployee(null); setEmpSearch(""); }}
                         className={`rounded-xl px-4 py-2 text-xs font-bold border transition-all ${
                           exportMode === key
                             ? "bg-gray-900 text-white border-gray-900 shadow-sm"

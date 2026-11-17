@@ -44,6 +44,18 @@ function StatCard({ icon: Icon, label, value, color }) {
   );
 }
 
+function ActionBtn({ onClick, Icon: I, label, gradient }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:scale-105 hover:shadow-xl ${gradient}`}
+    >
+      <I size={15} />
+      {label}
+    </button>
+  );
+}
+
 // ─── Task Card ────────────────────────────────────────────────────────────────
 
 function TaskCard({ task, onStart, onPause, onResume, onComplete }) {
@@ -61,16 +73,6 @@ function TaskCard({ task, onStart, onPause, onResume, onComplete }) {
   };
 
   const progress = isCompleted ? 100 : isRunning ? 65 : isPaused ? 35 : 0;
-
-  const Btn = ({ onClick, Icon: I, label, gradient }) => (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:scale-105 hover:shadow-xl ${gradient}`}
-    >
-      <I size={15} />
-      {label}
-    </button>
-  );
 
   return (
     <div className="rounded-[32px] border border-gray-200 bg-white/95 p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
@@ -112,19 +114,19 @@ function TaskCard({ task, onStart, onPause, onResume, onComplete }) {
         {/* ACTION BUTTONS — all four states */}
         <div className="flex flex-wrap items-start gap-2">
           {!isRunning && !isPaused && !isCompleted && (
-            <Btn onClick={onStart} Icon={PlayCircle} label="Start"
+            <ActionBtn onClick={onStart} Icon={PlayCircle} label="Start"
               gradient="bg-gradient-to-r from-[#111827] to-[#374151]" />
           )}
           {isRunning && (
-            <Btn onClick={onPause} Icon={PauseCircle} label="Pause"
+            <ActionBtn onClick={onPause} Icon={PauseCircle} label="Pause"
               gradient="bg-gradient-to-r from-amber-500 to-yellow-500" />
           )}
           {isPaused && (
-            <Btn onClick={onResume} Icon={RotateCcw} label="Resume"
+            <ActionBtn onClick={onResume} Icon={RotateCcw} label="Resume"
               gradient="bg-gradient-to-r from-sky-500 to-cyan-500" />
           )}
           {!isCompleted && (
-            <Btn onClick={onComplete} Icon={CheckCircle2} label="Complete"
+            <ActionBtn onClick={onComplete} Icon={CheckCircle2} label="Complete"
               gradient="bg-gradient-to-r from-emerald-500 to-green-500" />
           )}
         </div>
@@ -222,16 +224,21 @@ export default function WorkTracker() {
   const update = (id, patch) =>
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
 
-  const startTask = (id) =>
-    update(id, { running: true, paused: false, startedAt: Date.now(), startTime: nowStr() });
+  const startTask = (id) => {
+    const timestamp = Date.now();
+    const timeFormatted = nowStr();
+    update(id, { running: true, paused: false, startedAt: timestamp, startTime: timeFormatted });
+  };
 
   const pauseTask = (id) => {
     const t = tasks.find((x) => x.id === id);
-    update(id, { running: false, paused: true, savedElapsed: t.elapsed });
+    update(id, { running: false, paused: true, savedElapsed: t?.elapsed || 0 });
   };
 
-  const resumeTask = (id) =>
-    update(id, { running: true, paused: false, startedAt: Date.now() });
+  const resumeTask = (id) => {
+    const timestamp = Date.now();
+    update(id, { running: true, paused: false, startedAt: timestamp });
+  };
 
   // Complete: call backend if we have a serverId, otherwise just mark done locally
   const completeTask = async (id) => {

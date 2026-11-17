@@ -85,7 +85,7 @@ export default function AdminPanel() {
 
   // Listen for local punch events (from same browser)
   useEffect(() => {
-    const handlePunch = (e) => {
+    const handlePunch = () => {
       refreshLivePunches();
     };
     window.addEventListener("punch", handlePunch);
