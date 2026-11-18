@@ -48,6 +48,9 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
         />
       )}
 
+      {/* DESKTOP PLACEHOLDER SPACER (keeps adjacent content aligned while sidebar is fixed) */}
+      <div className="hidden md:block w-72 flex-shrink-0" aria-hidden="true" />
+
       <aside
         className={`
           fixed inset-y-0 left-0 z-50
@@ -56,7 +59,6 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
           px-4 py-4
           overflow-y-auto
           transition-transform duration-300
-          md:sticky md:top-0 md:h-screen md:translate-x-0
           ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >

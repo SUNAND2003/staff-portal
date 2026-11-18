@@ -92,7 +92,10 @@ export default function AdminSidebar({
         />
       )}
 
-      {/* SIDEBAR */}
+      {/* DESKTOP PLACEHOLDER SPACER (keeps adjacent content aligned while sidebar is fixed) */}
+      <div className="hidden md:block w-72 flex-shrink-0" aria-hidden="true" />
+
+      {/* FIXED SIDEBAR */}
       <aside
         className={`
           fixed inset-y-0 left-0 z-50
@@ -102,7 +105,6 @@ export default function AdminSidebar({
           px-4 py-2
           overflow-y-auto
           transition-transform duration-300
-          md:sticky md:top-0 md:h-screen md:translate-x-0
           ${
             mobileOpen
               ? "translate-x-0"
