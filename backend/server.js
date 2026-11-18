@@ -124,8 +124,8 @@ const healthCheckHandler = (req, res) => {
 app.get('/api/health', healthCheckHandler);
 app.get('/health', healthCheckHandler);
 
-// Root endpoint for simple browser verification
-app.get('/', (req, res) => {
+// Root endpoints for simple browser verification
+app.get(['/', '/api'], (req, res) => {
   res.json({
     success: true,
     message: 'HexaHR Staff Portal API is active',
