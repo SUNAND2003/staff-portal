@@ -16,15 +16,24 @@ const getAuthUser = () => {
   }
 };
 
+// ─── Normalise DB values ──────────────────────────────────────────────────────
+const normaliseStatusToDb = (s = "") => {
+  const clean = String(s).toLowerCase().trim().replace(/[-\s]+/g, "_");
+  if (clean === "inprogress") return "in_progress";
+  if (clean === "hold" || clean === "onhold") return "on_hold";
+  return clean || "pending";
+};
+
 // ─── Normalise DB values to display values ────────────────────────────────────
 const normaliseStatus = (s = "") => {
+  const dbStatus = normaliseStatusToDb(s);
   const map = {
     pending:     "Pending",
     in_progress: "In Progress",
     completed:   "Completed",
     on_hold:     "On Hold",
   };
-  return map[s.toLowerCase().replace(" ", "_")] || s;
+  return map[dbStatus] || s || "Pending";
 };
 
 const normalisePriority = (p = "") => p.toUpperCase();
@@ -66,9 +75,10 @@ function StatCard({ icon, label, value, bg }) {
 }
 
 function TaskCard({ task, onStatusChange, onDelete, isEmployee }) {
+  const dbStatus        = normaliseStatusToDb(task.status);
   const displayStatus   = normaliseStatus(task.status);
   const displayPriority = normalisePriority(task.priority);
-  const isCompleted     = task.status === "completed";
+  const isCompleted     = dbStatus === "completed";
 
   const assignedName =
     typeof task.assignedTo === "object"
@@ -98,7 +108,7 @@ function TaskCard({ task, onStatusChange, onDelete, isEmployee }) {
           </span>
           {/* Status dropdown — sends DB values */}
           <select
-            value={task.status}
+            value={dbStatus}
             onChange={(e) => onStatusChange(task._id, e.target.value)}
             className="rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700 outline-none transition-all duration-300 focus:border-[#111827] focus:bg-white"
           >
@@ -256,13 +266,14 @@ export default function TaskManagement() {
 
   // Stats — use DB status values
   const total      = tasks.length;
-  const pending    = tasks.filter((t) => t.status === "pending").length;
-  const inProgress = tasks.filter((t) => t.status === "in_progress").length;
-  const completed  = tasks.filter((t) => t.status === "completed").length;
+  const pending    = tasks.filter((t) => normaliseStatusToDb(t.status) === "pending").length;
+  const inProgress = tasks.filter((t) => normaliseStatusToDb(t.status) === "in_progress").length;
+  const completed  = tasks.filter((t) => normaliseStatusToDb(t.status) === "completed").length;
 
   // Filters — compare against DB status values
   const filtered = tasks.filter((task) => {
-    const matchStatus   = filterStatus   === "all" || task.status   === filterStatus;
+    const taskDbStatus  = normaliseStatusToDb(task.status);
+    const matchStatus   = filterStatus   === "all" || taskDbStatus === filterStatus;
     const matchPriority = filterPriority === "all" || task.priority === filterPriority;
     const assignedName  = typeof task.assignedTo === "object" ? task.assignedTo?.name || "" : task.assignedTo || "";
     const matchSearch   = !search ||

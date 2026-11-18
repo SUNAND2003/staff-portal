@@ -64,9 +64,9 @@ exports.getReport = async (req, res) => {
     const taskStats = {
       total:      tasks.length,
       completed:  tasks.filter((t) => t.status === 'completed').length,
-      inProgress: tasks.filter((t) => t.status === 'in_progress').length,
+      inProgress: tasks.filter((t) => t.status === 'in_progress' || t.status === 'in-progress').length,
       pending:    tasks.filter((t) => t.status === 'pending').length,
-      onHold:     tasks.filter((t) => t.status === 'on_hold').length,
+      onHold:     tasks.filter((t) => t.status === 'on_hold' || t.status === 'on-hold' || t.status === 'hold').length,
     };
 
     // ── Weekly chart data ──
@@ -124,7 +124,7 @@ exports.getAdminReport = async (req, res) => {
       User.countDocuments({ role: { $ne: 'admin' }, status: 'active' }),
       Attendance.find({ date: today }).populate('employee', 'name department'),
       Leave.countDocuments({ status: 'pending' }),
-      Task.countDocuments({ status: { $in: ['pending', 'in_progress'] } }),
+      Task.countDocuments({ status: { $in: ['pending', 'in_progress', 'in-progress', 'on_hold', 'on-hold', 'hold'] } }),
     ]);
 
     const present  = todayAttendance.filter((a) => a.checkIn).length;

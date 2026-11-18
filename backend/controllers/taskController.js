@@ -2,6 +2,16 @@ const Task = require('../models/Task');
 const User = require('../models/User');
 const mongoose = require('mongoose');
 
+const normalizeTaskStatus = (s) => {
+  if (!s) return undefined;
+  const clean = String(s).toLowerCase().trim().replace(/[-\s]+/g, '_');
+  if (clean === 'inprogress' || clean === 'in_progress') return 'in_progress';
+  if (clean === 'onhold' || clean === 'on_hold' || clean === 'hold') return 'on_hold';
+  if (clean === 'completed' || clean === 'done') return 'completed';
+  if (clean === 'pending') return 'pending';
+  return clean;
+};
+
 
 // GET MY TASKS
 exports.getMyTasks = async (req, res) => {
@@ -30,6 +40,7 @@ exports.createTask = async (req, res) => {
       title,
       description,
       assignedTo,
+      status,
       priority,
       dueDate,
       tags,
@@ -61,14 +72,18 @@ exports.createTask = async (req, res) => {
       });
     }
 
+    const initialStatus = normalizeTaskStatus(status) || 'pending';
+
     const task = await Task.create({
       title,
       description: description || '',
       assignedTo: finalAssignedTo,
       assignedBy: req.user._id,
+      status: initialStatus,
       priority: (priority || 'medium').toLowerCase(),
       dueDate,
       tags: tags || [],
+      completedAt: initialStatus === 'completed' ? new Date() : null,
     });
 
     const populatedTask = await Task.findById(task._id)
@@ -125,7 +140,16 @@ exports.updateTask = async (req, res) => {
 
     if (title !== undefined) task.title = title;
     if (description !== undefined) task.description = description;
-    if (status !== undefined) task.status = status;
+    if (status !== undefined) {
+      const normalizedStatus = normalizeTaskStatus(status);
+      task.status = normalizedStatus;
+      if (normalizedStatus === 'completed') {
+        task.completedAt = task.completedAt || new Date();
+        if (task.progress === undefined || task.progress === 0) task.progress = 100;
+      } else {
+        task.completedAt = null;
+      }
+    }
     if (priority !== undefined) task.priority = priority.toLowerCase();
     if (progress !== undefined) task.progress = progress;
     if (dueDate !== undefined) task.dueDate = dueDate;
@@ -138,10 +162,6 @@ exports.updateTask = async (req, res) => {
       task.assignedTo = assignedTo;
     }
 
-    if (status === 'completed') {
-      task.completedAt = new Date();
-    }
-
     await task.save();
 
     const updatedTask = await Task.findById(task._id)
@@ -151,6 +171,9 @@ exports.updateTask = async (req, res) => {
     res.json(updatedTask);
   } catch (err) {
     console.error(err);
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ message: err.message });
+    }
     res.status(500).json({
       message: 'Server error',
     });

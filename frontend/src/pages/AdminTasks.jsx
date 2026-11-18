@@ -1,6 +1,7 @@
 // src/pages/AdminTasks.jsx
 import { useState, useEffect, useCallback } from "react";
 import { Menu } from "lucide-react";
+import toast from "react-hot-toast";
 import AdminSidebar from "../layouts/AdminSidebar";
 import { taskAPI, employeeAPI } from "../services/api";
 
@@ -17,7 +18,12 @@ const PRIORITY_STYLES = {
   low:    "bg-slate-100 text-slate-600 border border-slate-200",
 };
 
-const normaliseStatus   = (s = "") => s.toLowerCase().replace(" ", "_");
+const normaliseStatus = (s = "") => {
+  const clean = String(s).toLowerCase().trim().replace(/[-\s]+/g, "_");
+  if (clean === "inprogress") return "in_progress";
+  if (clean === "hold" || clean === "onhold") return "on_hold";
+  return clean || "pending";
+};
 const normalisePriority = (p = "") => p.toLowerCase();
 
 const formatDate = (d) => {
@@ -348,8 +354,10 @@ export default function AdminTasks() {
       const updated = await taskAPI.updateTask(id, { status: newStatus });
       const saved = updated?.task || updated;
       setTasks((prev) => prev.map((t) => (t._id === id ? { ...t, ...saved } : t)));
+      toast.success("Task status updated");
     } catch (err) {
       console.error("Status update failed:", err);
+      toast.error(err.response?.data?.message || err.message || "Failed to update status");
     }
   };
 
@@ -358,8 +366,10 @@ export default function AdminTasks() {
       await taskAPI.deleteTask(id);
       setTasks((prev) => prev.filter((t) => t._id !== id));
       setDeleteConfirm(null);
+      toast.success("Task deleted");
     } catch (err) {
       console.error("Delete failed:", err);
+      toast.error(err.response?.data?.message || err.message || "Failed to delete task");
     }
   };
 
