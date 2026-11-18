@@ -83,7 +83,11 @@ const request = async (method, path, body = null, isFormData = false) => {
 
     // Handle authorization errors (403)
     if (res.status === 403) {
-      throw new Error(data.message || 'Access denied. You do not have permission.');
+      const err = new Error(data.message || 'Access denied. You do not have permission.');
+      err.code = data.code;
+      err.status = 403;
+      err.data = data;
+      throw err;
     }
 
     // Handle service unavailable / database not connected (503)
@@ -98,7 +102,11 @@ const request = async (method, path, body = null, isFormData = false) => {
 
     // Handle other error responses
     if (!res.ok) {
-      throw new Error(data.message || `Request failed with status ${res.status}`);
+      const err = new Error(data.message || `Request failed with status ${res.status}`);
+      err.code = data.code;
+      err.status = res.status;
+      err.data = data;
+      throw err;
     }
 
     return data;

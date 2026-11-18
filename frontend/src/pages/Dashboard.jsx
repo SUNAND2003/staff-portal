@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { attendanceAPI, punchAPI } from "../services/api";
 import useAuthStore from "../store/authStore";
-import { Clock, Coffee, LogOut, AlertTriangle, CheckCircle2, Loader, Play, Sparkles, Calendar } from "lucide-react";
+import { Clock, Coffee, LogOut, AlertTriangle, CheckCircle2, Loader, Play, Sparkles, Calendar, Wifi, WifiOff, ShieldAlert, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
 
 const formatTime = (seconds) => {
@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [workTime, setWorkTime] = useState(0);
   const [breakTime, setBreakTime] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [networkError, setNetworkError] = useState(null);
 
   // Track what is currently ticking: "work" | "break" | null
   const tickingRef = useRef(null);
@@ -121,7 +122,30 @@ export default function Dashboard() {
         loadAttendanceData(); // revert optimistic state
       }
     } catch (err) {
-      toast.error(err.message || "Error recording punch");
+      const errMsg = err?.message || "Error recording punch";
+      const isNetworkRestricted =
+        err?.code === "UNAUTHORIZED_NETWORK" ||
+        err?.status === 403 ||
+        errMsg.toLowerCase().includes("unauthorized network") ||
+        errMsg.toLowerCase().includes("restricted to the company") ||
+        errMsg.toLowerCase().includes("hexa_5g");
+
+      if (isNetworkRestricted) {
+        setNetworkError({
+          title: "Unauthorized Network Detected",
+          message:
+            err?.data?.message ||
+            errMsg ||
+            "Attendance punch is restricted to the company office network (HEXA_5G). Please connect to HEXA_5G Wi-Fi to punch.",
+          clientIp: err?.data?.clientIp || "",
+          ssid: err?.data?.allowedWifiSsid || "HEXA_5G",
+        });
+        toast.error("Punch blocked: Connect to HEXA_5G Wi-Fi to punch.", {
+          duration: 5000,
+        });
+      } else {
+        toast.error(errMsg);
+      }
       loadAttendanceData();
     } finally {
       setPunching(false);
@@ -180,8 +204,16 @@ export default function Dashboard() {
               </p>
             </div>
 
-            {/* LIVE STATUS PILL */}
-            <div>
+            {/* LIVE STATUS PILL & NETWORK BADGE */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div
+                className="inline-flex items-center gap-1.5 rounded-2xl bg-white/10 px-3.5 py-2 text-xs font-bold text-white/90 backdrop-blur-md border border-white/15 shadow-sm"
+                title="Punches are secured and restricted to HEXA_5G office Wi-Fi"
+              >
+                <Wifi size={13} className="text-emerald-400" />
+                <span>HEXA_5G Network</span>
+              </div>
+
               {!attendance?.checkIn && !isCheckedOut && (
                 <div className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2.5 text-xs font-bold text-white/80 backdrop-blur-md border border-white/10">
                   <span className="h-2 w-2 rounded-full bg-slate-400" />
@@ -449,6 +481,62 @@ export default function Dashboard() {
                 <span>Confirm</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* UNAUTHORIZED NETWORK DETECTED MODAL */}
+      {networkError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in">
+          <div className="w-full max-w-md rounded-[28px] border border-rose-200/80 bg-white p-6 sm:p-7 shadow-2xl">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 shadow-inner">
+              <WifiOff size={32} className="animate-pulse" />
+            </div>
+
+            <div className="flex justify-center mb-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-[11px] font-bold">
+                <ShieldAlert size={13} />
+                Network Restriction Active
+              </span>
+            </div>
+
+            <h3 className="text-xl font-black text-center text-slate-900">
+              Unauthorized Network Detected
+            </h3>
+
+            <p className="mt-2 text-center text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Attendance punch is restricted to the company office network (<strong className="text-slate-900">{networkError.ssid || "HEXA_5G"}</strong>). Please connect to <strong className="text-indigo-600">{networkError.ssid || "HEXA_5G"}</strong> Wi-Fi to punch.
+            </p>
+
+            <div className="my-5 rounded-2xl bg-slate-50 border border-slate-200/80 p-4 space-y-2.5 text-xs">
+              <div className="flex items-center justify-between py-1 border-b border-slate-200/60">
+                <span className="text-slate-500 font-medium">Required Office Wi-Fi</span>
+                <span className="font-bold text-emerald-600 font-mono flex items-center gap-1.5">
+                  <Wifi size={13} /> {networkError.ssid || "HEXA_5G"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="text-slate-500 font-medium">Your Current Network IP</span>
+                <span className="font-mono text-slate-700 font-bold truncate max-w-[190px]" title={networkError.clientIp}>
+                  {networkError.clientIp || "Mobile Data / External"}
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-amber-50 border border-amber-200/80 p-3.5 mb-5 text-[11px] text-amber-900 leading-relaxed flex items-start gap-2.5">
+              <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+              <span>
+                Please disconnect from personal mobile data or hotspot and connect your device to <strong>{networkError.ssid || "HEXA_5G"}</strong>.
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setNetworkError(null)}
+              className="w-full rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 text-sm transition-all shadow-lg shadow-slate-900/10 active:scale-[0.98]"
+            >
+              Understood
+            </button>
           </div>
         </div>
       )}

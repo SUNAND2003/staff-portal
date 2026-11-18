@@ -1,5 +1,6 @@
 const Punch = require('../models/Punch');
 const Attendance = require('../models/Attendance');
+const WorkingHours = require('../models/WorkingHours');
 const { todayStr } = require('../utils/dateHelpers');
 
 // ─── POST /api/attendance/punch ────────────────────────────────────────────────
@@ -13,6 +14,62 @@ exports.recordPunch = async (req, res) => {
         success: false,
         message: 'Action and status are required.' 
       });
+    }
+
+    // ─── Network Restriction Check (Office Wi-Fi / IP) ─────────────────────────
+    let clientIp = (
+      req.headers['x-forwarded-for'] ||
+      req.headers['x-real-ip'] ||
+      req.socket.remoteAddress ||
+      req.ip ||
+      ''
+    ).split(',')[0].trim();
+
+    // Clean IPv4 mapped to IPv6 (::ffff:192.168.1.1 -> 192.168.1.1)
+    clientIp = clientIp.replace(/^::ffff:/, '').trim();
+
+    let config = null;
+    try {
+      config = await WorkingHours.findOne().lean();
+    } catch (confErr) {
+      console.warn('Could not read WorkingHours for network restriction:', confErr.message);
+    }
+
+    if (config && config.networkRestrictionEnabled) {
+      const isAdmin = req.user && req.user.role === 'admin';
+      const shouldBypass = isAdmin && config.allowAdminBypass;
+
+      if (!shouldBypass) {
+        // Allow localhost during local development
+        const isLocalhost =
+          !clientIp ||
+          clientIp === '127.0.0.1' ||
+          clientIp === '::1' ||
+          clientIp === 'localhost';
+
+        if (!isLocalhost) {
+          const allowedV6 = (config.allowedIpv6Prefixes || []).map((p) => p.trim().toLowerCase()).filter(Boolean);
+          const allowedV4 = (config.allowedIpv4Addresses || []).map((p) => p.trim()).filter(Boolean);
+          const allowedSubnets = (config.allowedSubnets || []).map((p) => p.trim()).filter(Boolean);
+
+          const clientIpLower = clientIp.toLowerCase();
+
+          const matchV6 = allowedV6.some((prefix) => clientIpLower.startsWith(prefix));
+          const matchV4 = allowedV4.some((ip) => clientIp === ip || clientIp.startsWith(ip));
+          const matchSubnet = allowedSubnets.some((subnet) => clientIp.startsWith(subnet));
+
+          if (!matchV6 && !matchV4 && !matchSubnet) {
+            const wifiSsid = config.allowedWifiSsid || 'HEXA_5G';
+            return res.status(403).json({
+              success: false,
+              code: 'UNAUTHORIZED_NETWORK',
+              message: `Unauthorized Network: Attendance punch is restricted to the company office network (${wifiSsid}). Please connect to ${wifiSsid} Wi-Fi to punch.`,
+              clientIp,
+              allowedWifiSsid: wifiSsid,
+            });
+          }
+        }
+      }
     }
 
     // Validate action type
@@ -97,6 +154,8 @@ exports.recordPunch = async (req, res) => {
       status,
       timestamp: now,
       date: today,
+      ipAddress: clientIp,
+      network: config?.allowedWifiSsid || 'HEXA_5G',
     });
 
     const savedPunch = await punch.save();

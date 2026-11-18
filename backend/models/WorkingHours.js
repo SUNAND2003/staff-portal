@@ -26,6 +26,31 @@ const workingHoursSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    // Office Network (Wi-Fi / IP) restrictions
+    networkRestrictionEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    allowedWifiSsid: {
+      type: String,
+      default: 'HEXA_5G',
+    },
+    allowedIpv6Prefixes: {
+      type: [String],
+      default: ['2405:201:f006:b86f'],
+    },
+    allowedIpv4Addresses: {
+      type: [String],
+      default: ['49.47.199.103', '192.168.29.'],
+    },
+    allowedSubnets: {
+      type: [String],
+      default: ['192.168.29.'],
+    },
+    allowAdminBypass: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );
