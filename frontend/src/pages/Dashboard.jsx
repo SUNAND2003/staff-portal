@@ -329,62 +329,133 @@ export default function Dashboard() {
         </div>
 
         {/* ACTION CONTROLS */}
-        <div className="rounded-[28px] sm:rounded-[32px] border border-slate-200/80 bg-white p-5 sm:p-7 shadow-sm">
-          <div className="mb-4 sm:mb-5">
-            <h2 className="text-lg sm:text-xl font-black text-slate-900">Punch Actions</h2>
-            <p className="text-xs sm:text-sm text-slate-500">Clock in, pause for breaks, and submit check-out</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div style={{ background: "#ffffff", borderRadius: 16, padding: "20px 24px", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: "#0f172a", margin: "0 0 16px" }}>Actions</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
             {canPunchIn && (
               <button
+                type="button"
                 onClick={() => handlePunch("Punch In", "Working")}
                 disabled={punching}
-                className="flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-95 disabled:opacity-60 cursor-pointer"
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 10,
+                  background: "#10b981",
+                  color: "#ffffff",
+                  border: "none",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: punching ? "not-allowed" : "pointer",
+                  opacity: punching ? 0.7 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  transition: "opacity 0.15s ease",
+                }}
               >
-                <CheckCircle2 size={18} />
-                <span>Start Work</span>
+                <CheckCircle2 size={16} /> Start Work
               </button>
             )}
 
             {canBreakStart && (
               <button
+                type="button"
                 onClick={() => handlePunch("Break Start", "On Break")}
                 disabled={punching}
-                className="flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-4 text-sm font-bold text-white shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-95 disabled:opacity-60 cursor-pointer"
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 10,
+                  background: "#f59e0b",
+                  color: "#ffffff",
+                  border: "none",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: punching ? "not-allowed" : "pointer",
+                  opacity: punching ? 0.7 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  transition: "opacity 0.15s ease",
+                }}
               >
-                <Coffee size={18} />
-                <span>Start Break</span>
+                <Coffee size={16} /> Start Break
               </button>
             )}
 
             {canBreakEnd && (
               <button
+                type="button"
                 onClick={() => handlePunch("Break End", "Working")}
                 disabled={punching}
-                className="flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-4 text-sm font-bold text-white shadow-md shadow-blue-500/20 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-95 disabled:opacity-60 cursor-pointer"
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 10,
+                  background: "#06b6d4",
+                  color: "#ffffff",
+                  border: "none",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: punching ? "not-allowed" : "pointer",
+                  opacity: punching ? 0.7 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  transition: "opacity 0.15s ease",
+                }}
               >
-                <Play size={18} />
-                <span>Resume Work</span>
+                <CheckCircle2 size={16} /> Resume Work
               </button>
             )}
 
             {canPunchOut && (
               <button
+                type="button"
                 onClick={() => setShowModal(true)}
                 disabled={punching}
-                className="flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-rose-500 to-red-600 px-5 py-4 text-sm font-bold text-white shadow-md shadow-red-500/20 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-95 disabled:opacity-60 cursor-pointer sm:col-span-2 lg:col-span-1"
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 10,
+                  background: "#ef4444",
+                  color: "#ffffff",
+                  border: "none",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: punching ? "not-allowed" : "pointer",
+                  opacity: punching ? 0.7 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  transition: "opacity 0.15s ease",
+                }}
               >
-                <LogOut size={18} />
-                <span>Check Out</span>
+                <LogOut size={16} /> Check Out
               </button>
             )}
 
             {isCheckedOut && (
-              <div className="col-span-full rounded-2xl bg-slate-50 border border-slate-200 p-4 text-center">
-                <p className="text-sm font-semibold text-slate-700">
-                  🎉 You have completed your shift for today. Great work!
-                </p>
+              <div
+                style={{
+                  padding: "14px 16px",
+                  background: "#f8fafc",
+                  borderRadius: 10,
+                  border: "1px solid #e2e8f0",
+                  color: "#475569",
+                  fontSize: 14,
+                  fontWeight: 500,
+                  textAlign: "center",
+                  gridColumn: "1 / -1",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+              >
+                <CheckCircle2 size={16} color="#10b981" />
+                <span>You have completed your shift for today.</span>
               </div>
             )}
           </div>
