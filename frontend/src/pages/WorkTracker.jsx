@@ -32,13 +32,13 @@ const nowStr = () =>
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
-    <div className="flex min-w-[220px] flex-1 items-center gap-4 rounded-[30px] border border-gray-200 bg-white/95 p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
-      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${color}`}>
-        <Icon size={24} className="text-white" />
+    <div className="flex w-full items-center gap-4 rounded-2xl sm:rounded-[30px] border border-gray-200 bg-white/95 p-4 sm:p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div className={`flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl ${color}`}>
+        <Icon size={22} className="text-white" />
       </div>
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-gray-500">{label}</p>
-        <h2 className="mt-1 text-3xl font-black text-gray-900">{value}</h2>
+      <div className="min-w-0">
+        <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.08em] text-gray-500 truncate">{label}</p>
+        <h2 className="mt-0.5 sm:mt-1 text-xl sm:text-3xl font-black text-gray-900 truncate">{value}</h2>
       </div>
     </div>
   );
@@ -343,7 +343,7 @@ export default function WorkTracker() {
           </div>
 
           {/* STATS */}
-          <div className="mb-8 flex flex-wrap gap-5">
+          <div className="mb-6 sm:mb-8 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5">
             <StatCard icon={Clock3}     label="Total Time" value={formatTime(totalTime)}           color="bg-gradient-to-r from-[#111827] to-[#374151]" />
             <StatCard icon={PlayCircle} label="Running"    value={activeTasks.filter((t) => t.running).length}  color="bg-gradient-to-r from-indigo-500 to-purple-600" />
             <StatCard icon={Target}     label="Completed"  value={completedTasks.length}            color="bg-gradient-to-r from-emerald-500 to-green-500" />
@@ -354,28 +354,28 @@ export default function WorkTracker() {
           )}
 
           {/* ADD TASK */}
-          <div className="mb-8 rounded-[32px] border border-gray-200 bg-white/95 p-6 shadow-sm backdrop-blur-md">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-700"><Plus size={22} /></div>
+          <div className="mb-6 sm:mb-8 rounded-2xl sm:rounded-[32px] border border-gray-200 bg-white/95 p-4 sm:p-6 shadow-sm backdrop-blur-md">
+            <div className="mb-4 sm:mb-6 flex items-center gap-3">
+              <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl bg-slate-100 text-slate-700 shrink-0"><Plus size={20} /></div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Create Task</h2>
-                <p className="mt-1 text-sm text-gray-500">Add employee work tasks</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Create Task</h2>
+                <p className="mt-0.5 text-xs sm:text-sm text-gray-500">Add employee work tasks</p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <input
                 type="text" placeholder="Task title" value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addTask()}
-                className="min-w-[220px] flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 outline-none transition-all duration-300 focus:border-[#111827] focus:bg-white focus:shadow-lg"
+                className="w-full sm:flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 outline-none transition-all duration-300 focus:border-[#111827] focus:bg-white focus:shadow-lg"
               />
               <input
                 type="text" placeholder="Description (optional)" value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="min-w-[220px] flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 outline-none transition-all duration-300 focus:border-[#111827] focus:bg-white focus:shadow-lg"
+                className="w-full sm:flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 outline-none transition-all duration-300 focus:border-[#111827] focus:bg-white focus:shadow-lg"
               />
               <button onClick={addTask}
-                className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#111827] to-[#374151] px-6 py-3 text-sm font-bold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
+                className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#111827] to-[#374151] px-6 py-3 text-sm font-bold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shrink-0 cursor-pointer">
                 <Plus size={17} /> Add Task
               </button>
             </div>

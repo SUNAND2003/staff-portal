@@ -440,7 +440,100 @@ export default function AdminStaff() {
               </button>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* MOBILE STAFF CARDS */}
+            <div className="divide-y divide-gray-100 block md:hidden">
+              {initialLoading ? (
+                <div className="py-16 text-center text-sm text-gray-400">Loading employees...</div>
+              ) : staffList.length === 0 ? (
+                <div className="py-16 text-center text-sm text-gray-400">No staff found.</div>
+              ) : (
+                staffList.map((s) => (
+                  <div key={s.employeeId} className="p-4 space-y-3 bg-white">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-[#111827] to-[#374151] text-xs font-bold text-white shadow-md">
+                          {s.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-bold text-gray-900 truncate">{s.name}</h4>
+                          <p className="text-xs text-gray-500 truncate">{s.department || "No Department"}</p>
+                        </div>
+                      </div>
+                      <span className="rounded-xl bg-indigo-100 px-2.5 py-1 text-xs font-bold text-indigo-700 shrink-0">
+                        {s.employeeId}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                      {s.role === "admin" ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-100 px-2.5 py-0.5 font-bold text-purple-700">
+                          <Shield size={10} /> Admin
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-100 px-2.5 py-0.5 font-bold text-blue-700">
+                          <User size={10} /> Employee
+                        </span>
+                      )}
+
+                      {s.status === "active" ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-0.5 font-bold text-emerald-700">
+                          <CheckCircle2 size={10} /> Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 font-bold text-slate-500">
+                          <XCircle size={10} /> Inactive
+                        </span>
+                      )}
+
+                      <span className="font-mono text-gray-500 bg-slate-100 px-2.5 py-0.5 rounded-md">
+                        @{s.username}
+                      </span>
+                    </div>
+
+                    <div className="rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
+                      <span className="text-gray-500 font-semibold">Password:</span>
+                      <span className="font-mono text-gray-800 font-bold select-all">
+                        {s.plainPassword ? (showAllPasswords ? s.plainPassword : "••••••••") : "—"}
+                      </span>
+                    </div>
+
+                    {s.username !== "admin" ? (
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          onClick={() => handleToggle(s.employeeId)}
+                          className={`flex-1 rounded-xl py-2 text-xs font-bold transition-all ${
+                            s.status === "active"
+                              ? "border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+                              : "border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                          }`}
+                        >
+                          {s.status === "active" ? "Deactivate" : "Activate"}
+                        </button>
+                        <button
+                          title="Reset password"
+                          onClick={() => openResetModal(s.employeeId, s.name)}
+                          className="flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-100 transition-all"
+                        >
+                          <Lock size={13} /> Reset
+                        </button>
+                        <button
+                          onClick={() => handleDelete(s.employeeId)}
+                          className="rounded-xl border border-red-100 bg-red-50 p-2 text-red-500 hover:bg-red-100 transition-all"
+                          title="Delete employee"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-right text-xs italic text-gray-400">Protected Administrator</div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* DESKTOP TABLE */}
+            <div className="overflow-x-auto hidden md:block">
               <table className="min-w-[900px] w-full">
                 <thead>
                   <tr className="border-b border-gray-100 bg-slate-50">
@@ -571,8 +664,8 @@ export default function AdminStaff() {
 
         {/* PASSWORD RESET MODAL */}
         {resetModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-3xl border border-gray-200 bg-white p-8 shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="w-full max-w-md rounded-[28px] border border-gray-200 bg-white p-6 sm:p-8 shadow-2xl">
               <h3 className="mb-6 text-2xl font-black text-gray-900">Reset Password</h3>
               <p className="mb-4 text-sm text-gray-600">
                 Resetting password for <strong>{resetEmployeeName}</strong>

@@ -30,11 +30,11 @@ const badgeStyle = (status) => {
 
 function StatCard({ title, value, icon: Icon, color }) {
   return (
-    <div className="flex min-w-[220px] flex-1 items-center gap-4 rounded-[30px] border border-gray-200 bg-white/95 p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
-      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${color}`}><Icon size={26} /></div>
-      <div>
-        <p className="text-sm font-semibold text-gray-500">{title}</p>
-        <h2 className="mt-1 text-3xl font-black text-gray-900">{value}</h2>
+    <div className="flex w-full items-center gap-4 rounded-2xl sm:rounded-[30px] border border-gray-200 bg-white/95 p-4 sm:p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div className={`flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl ${color}`}><Icon size={24} /></div>
+      <div className="min-w-0">
+        <p className="text-xs sm:text-sm font-semibold text-gray-500 truncate">{title}</p>
+        <h2 className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-black text-gray-900 truncate">{value}</h2>
       </div>
     </div>
   );
@@ -167,7 +167,7 @@ export default function LeaveManagement() {
         </div>
 
         {/* STATS */}
-        <div className="mb-8 flex flex-wrap gap-5">
+        <div className="mb-6 sm:mb-8 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5">
           <StatCard title="Total Requests" value={totalLeaves}    icon={FileText}    color="bg-blue-100 text-blue-600"    />
           <StatCard title="Approved"        value={approvedLeaves} icon={CheckCircle2} color="bg-emerald-100 text-emerald-600" />
           <StatCard title="Pending"         value={pendingLeaves}  icon={Clock3}       color="bg-amber-100 text-amber-600"  />

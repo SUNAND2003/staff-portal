@@ -411,54 +411,110 @@ useEffect(() => {
                   <p className="text-sm text-gray-400">No attendance data yet. Employees need to punch in from their dashboard.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-[820px] w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-100 bg-slate-50">
-                        {["Employee ID", "Name", "Department", "Check In", "Check Out", "Hours", "Status"].map((h) => (
-                          <th key={h} className="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.08em] text-gray-400">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((r, i) => (
-                        <tr key={r.id ?? i} className="border-b border-gray-50 transition-all hover:bg-slate-50">
-                          <td className="px-5 py-4"><span className="rounded-xl bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-700 border border-indigo-200">{r.id}</span></td>
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              <img src={`https://i.pravatar.cc/40?img=${r.avatar || 20}`} alt="" className="h-9 w-9 rounded-full border border-gray-200" />
-                              <span className="font-semibold text-gray-800">{r.name}</span>
+                <>
+                  {/* MOBILE CARDS (Visible on mobile screens) */}
+                  <div className="divide-y divide-gray-100 block md:hidden">
+                    {filtered.map((r, i) => (
+                      <div key={r.id ?? i} className="p-4 space-y-3 bg-white">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="h-10 w-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                              {r.name?.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "E"}
                             </div>
-                          </td>
-                          <td className="px-5 py-4 text-gray-500">{r.department}</td>
-                          <td className="px-5 py-4 font-semibold text-gray-700">{r.checkIn}</td>
-                          <td className="px-5 py-4 font-semibold text-gray-700">{r.checkOut}</td>
-                          <td className="px-5 py-4"><span className="rounded-xl bg-slate-100 px-3 py-1 text-xs font-bold text-gray-700 border border-gray-200">{r.hours}</span></td>
-                          <td className="px-5 py-4">
-                            {r._raw?._id ? (
-                              <select
-                                value={r.status}
-                                onChange={(e) => handleStatusChange(r._raw._id, e.target.value)}
-                                className={`rounded-xl border px-3 py-1.5 text-xs font-bold outline-none cursor-pointer transition-all ${STATUS_STYLE[r.status] || STATUS_STYLE.Absent}`}
-                              >
-                                <option value="Present" className="bg-white text-gray-800">Present</option>
-                                <option value="Late" className="bg-white text-gray-800">Late</option>
-                                <option value="On Break" className="bg-white text-gray-800">On Break</option>
-                                <option value="On Leave" className="bg-white text-gray-800">On Leave</option>
-                                <option value="Absent" className="bg-white text-gray-800">Absent</option>
-                              </select>
-                            ) : (
-                              <span className={`rounded-xl px-3 py-1 text-xs font-bold ${STATUS_STYLE[r.status] || STATUS_STYLE.Absent}`}>{r.status}</span>
-                            )}
-                          </td>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-gray-900 truncate">{r.name}</p>
+                              <p className="text-xs text-gray-500 truncate">{r.department || "Staff"}</p>
+                            </div>
+                          </div>
+                          <span className="rounded-xl bg-indigo-100 px-2.5 py-1 text-xs font-bold text-indigo-700 border border-indigo-200">
+                            {r.id}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-2.5 text-center text-xs">
+                          <div>
+                            <span className="text-[10px] text-gray-400 font-bold block uppercase">In</span>
+                            <span className="font-semibold text-gray-800 font-mono">{r.checkIn}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-gray-400 font-bold block uppercase">Out</span>
+                            <span className="font-semibold text-gray-800 font-mono">{r.checkOut}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-gray-400 font-bold block uppercase">Hours</span>
+                            <span className="font-bold text-indigo-600">{r.hours}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-xs text-gray-400 font-medium">Status</span>
+                          {r._raw?._id ? (
+                            <select
+                              value={r.status}
+                              onChange={(e) => handleStatusChange(r._raw._id, e.target.value)}
+                              className={`rounded-xl border px-3 py-1.5 text-xs font-bold outline-none cursor-pointer ${STATUS_STYLE[r.status] || STATUS_STYLE.Absent}`}
+                            >
+                              <option value="Present" className="bg-white text-gray-800">Present</option>
+                              <option value="Late" className="bg-white text-gray-800">Late</option>
+                              <option value="On Break" className="bg-white text-gray-800">On Break</option>
+                              <option value="On Leave" className="bg-white text-gray-800">On Leave</option>
+                              <option value="Absent" className="bg-white text-gray-800">Absent</option>
+                            </select>
+                          ) : (
+                            <span className={`rounded-xl px-3 py-1 text-xs font-bold ${STATUS_STYLE[r.status] || STATUS_STYLE.Absent}`}>{r.status}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* DESKTOP TABLE (Hidden on mobile) */}
+                  <div className="overflow-x-auto hidden md:block">
+                    <table className="min-w-[820px] w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100 bg-slate-50">
+                          {["Employee ID", "Name", "Department", "Check In", "Check Out", "Hours", "Status"].map((h) => (
+                            <th key={h} className="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.08em] text-gray-400">{h}</th>
+                          ))}
                         </tr>
-                      ))}
-                      {filtered.length === 0 && (
-                        <tr><td colSpan={7} className="py-16 text-center text-sm text-gray-400">No records match your search.</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {filtered.map((r, i) => (
+                          <tr key={r.id ?? i} className="border-b border-gray-50 transition-all hover:bg-slate-50">
+                            <td className="px-5 py-4"><span className="rounded-xl bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-700 border border-indigo-200">{r.id}</span></td>
+                            <td className="px-5 py-4">
+                              <div className="flex items-center gap-3">
+                                <img src={`https://i.pravatar.cc/40?img=${r.avatar || 20}`} alt="" className="h-9 w-9 rounded-full border border-gray-200" />
+                                <span className="font-semibold text-gray-800">{r.name}</span>
+                              </div>
+                            </td>
+                            <td className="px-5 py-4 text-gray-500">{r.department}</td>
+                            <td className="px-5 py-4 font-semibold text-gray-700">{r.checkIn}</td>
+                            <td className="px-5 py-4 font-semibold text-gray-700">{r.checkOut}</td>
+                            <td className="px-5 py-4"><span className="rounded-xl bg-slate-100 px-3 py-1 text-xs font-bold text-gray-700 border border-gray-200">{r.hours}</span></td>
+                            <td className="px-5 py-4">
+                              {r._raw?._id ? (
+                                <select
+                                  value={r.status}
+                                  onChange={(e) => handleStatusChange(r._raw._id, e.target.value)}
+                                  className={`rounded-xl border px-3 py-1.5 text-xs font-bold outline-none cursor-pointer transition-all ${STATUS_STYLE[r.status] || STATUS_STYLE.Absent}`}
+                                >
+                                  <option value="Present" className="bg-white text-gray-800">Present</option>
+                                  <option value="Late" className="bg-white text-gray-800">Late</option>
+                                  <option value="On Break" className="bg-white text-gray-800">On Break</option>
+                                  <option value="On Leave" className="bg-white text-gray-800">On Leave</option>
+                                  <option value="Absent" className="bg-white text-gray-800">Absent</option>
+                                </select>
+                              ) : (
+                                <span className={`rounded-xl px-3 py-1 text-xs font-bold ${STATUS_STYLE[r.status] || STATUS_STYLE.Absent}`}>{r.status}</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
 
@@ -496,17 +552,20 @@ useEffect(() => {
                  const meta = ACTION_STYLE[item.action] || ACTION_STYLE["Punch In"];
                   const isNew  = flashIds.has(item._id);
                   return (
-                    <div key={item._id ?? i} className={`flex items-center gap-4 px-6 py-4 transition-all hover:bg-slate-50 ${isNew ? "row-new row-flash" : ""}`}>
-                      <span className={`h-2.5 w-2.5 rounded-full ${meta.dot} ${isNew ? "animate-pulse" : ""}`} />
-                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${meta.pill}`}>{meta.label}</span>
-                      <span className="hidden rounded-xl bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-700 border border-indigo-200 sm:inline">{item.employeeId}</span>
-                      <span className="hidden max-w-[150px] truncate text-sm font-semibold text-gray-700 md:inline">{item.employeeName}</span>
-                      <div className="flex-1" />
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-gray-900">{fmtTime(item.timestamp)}</p>
-                        <p className="text-xs text-gray-400">{fmtDate(item.timestamp)}</p>
+                    <div key={item._id ?? i} className={`flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3.5 sm:py-4 transition-all hover:bg-slate-50 ${isNew ? "row-new row-flash" : ""}`}>
+                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${meta.dot} ${isNew ? "animate-pulse" : ""}`} />
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] sm:text-xs font-bold shrink-0 ${meta.pill}`}>{meta.label}</span>
+                      
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-xs sm:text-sm font-bold text-gray-900 truncate">{item.employeeName || "Employee"}</span>
+                        <span className="text-[10px] sm:text-xs text-indigo-600 font-semibold">{item.employeeId || "—"}</span>
                       </div>
-                      <span className="hidden rounded-xl bg-slate-100 px-3 py-1 text-xs font-bold text-gray-500 border border-gray-200 sm:inline">{item.status}</span>
+
+                      <div className="text-right shrink-0">
+                        <p className="text-xs sm:text-sm font-bold text-gray-900 font-mono">{fmtTime(item.timestamp)}</p>
+                        <p className="text-[10px] text-gray-400">{fmtDate(item.timestamp)}</p>
+                      </div>
+                      <span className="hidden rounded-xl bg-slate-100 px-3 py-1 text-xs font-bold text-gray-500 border border-gray-200 lg:inline shrink-0">{item.status}</span>
                     </div>
                   );
                 })}

@@ -114,12 +114,14 @@ export default function AdminSidebar({
       >
 
         {/* MOBILE CLOSE */}
-        <div className="flex justify-end p-2 md:hidden">
+        <div className="flex items-center justify-between p-2 pb-0 md:hidden">
+          <span className="text-xs font-bold uppercase tracking-widest text-white/50">Admin Menu</span>
           <button
             onClick={() => setMobileOpen(false)}
-            className="rounded-xl bg-white/10 p-2 text-white hover:bg-white/20"
+            className="rounded-xl bg-white/10 p-2 text-white hover:bg-white/20 active:scale-95 transition-all"
+            aria-label="Close menu"
           >
-            <X size={22} />
+            <X size={20} />
           </button>
         </div>
 
@@ -128,20 +130,18 @@ export default function AdminSidebar({
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          padding: "12px 16px",
-          marginBottom: "40px",
+          padding: "8px 16px",
+          marginBottom: "20px",
           borderBottom: "1px solid rgba(255,255,255,0.1)",
         }}>
           <img
             src={logo}
             alt="Hexa Logo"
             style={{
-              width: "200px",
+              width: "180px",
               height: "auto",
-              marginTop: "20px",
+              marginTop: "10px",
               objectFit: "contain",
-              left: "10%",
-              transform: "translateX(-10%)",
               filter: "brightness(0) invert(1)",
             }}
           />

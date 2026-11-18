@@ -185,8 +185,8 @@ function TaskModal({ task, employees, onClose, onSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[32px] border border-gray-200 bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[28px] sm:rounded-[32px] border border-gray-200 bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
           <h2 className="text-2xl font-black text-gray-900">
             {isEdit ? "Edit Task" : "+ New Task"}
@@ -430,7 +430,7 @@ export default function AdminTasks() {
           </div>
 
           {/* STATS */}
-          <div className="mb-8 flex flex-wrap gap-4">
+          <div className="mb-6 sm:mb-8 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             <StatCard icon="📋" label="Total"       value={total}      bg="bg-slate-100"   />
             <StatCard icon="🕒" label="Pending"     value={pending}    bg="bg-amber-100"   />
             <StatCard icon="⚡" label="In Progress" value={inProgress} bg="bg-indigo-100"  />
@@ -442,7 +442,7 @@ export default function AdminTasks() {
 
           {/* FILTERS */}
           <div className="mb-6 flex flex-wrap items-center gap-3 rounded-[28px] border border-gray-200 bg-white/95 p-4 shadow-sm">
-            <div className="relative min-w-[220px] flex-1">
+            <div className="relative min-w-[200px] flex-1">
               <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <input
                 type="text" value={search}
@@ -479,9 +479,89 @@ export default function AdminTasks() {
             </span>
           </div>
 
-          {/* TABLE */}
-          <div className="overflow-hidden rounded-[32px] border border-gray-200 bg-white/95 shadow-sm">
-            <div className="overflow-x-auto">
+          {/* TASKS LIST */}
+          <div className="overflow-hidden rounded-[28px] sm:rounded-[32px] border border-gray-200 bg-white/95 shadow-sm">
+            {/* MOBILE CARDS (Visible on mobile) */}
+            <div className="divide-y divide-gray-100 block md:hidden">
+              {loading ? (
+                <div className="py-16 text-center text-sm text-gray-400">Loading tasks…</div>
+              ) : filtered.length === 0 ? (
+                <div className="py-16 text-center">
+                  <p className="text-base font-bold text-gray-400">No tasks found</p>
+                  <p className="mt-1 text-xs text-gray-300">Try a different filter or create a new task</p>
+                </div>
+              ) : (
+                filtered.map((task) => {
+                  const status = STATUS_STYLES[normaliseStatus(task.status)] || STATUS_STYLES.pending;
+                  const priority = PRIORITY_STYLES[normalisePriority(task.priority)] || PRIORITY_STYLES.medium;
+                  const assignedName = typeof task.assignedTo === "object" ? task.assignedTo?.name || "Unassigned" : task.assignedTo || "Unassigned";
+                  const assignedDept = typeof task.assignedTo === "object" ? task.assignedTo?.department : null;
+                  const overdue = task.dueDate && new Date(task.dueDate) < new Date() && normaliseStatus(task.status) !== "completed";
+
+                  return (
+                    <div key={task._id} className="p-4 space-y-3 bg-white">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-sm font-bold text-gray-900 leading-snug">{task.title}</h4>
+                          {task.description && (
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{task.description}</p>
+                          )}
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${priority}`}>
+                          {normalisePriority(task.priority).toUpperCase()}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs bg-slate-50 p-2.5 rounded-xl">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Avatar name={assignedName} />
+                          <div className="min-w-0 truncate">
+                            <span className="font-semibold text-gray-800 block truncate">{assignedName}</span>
+                            {assignedDept && <span className="text-[10px] text-gray-400 truncate">{assignedDept}</span>}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] text-gray-400 block">Due date</span>
+                          <span className={`font-semibold font-mono ${overdue ? "text-red-500 font-bold" : "text-gray-700"}`}>
+                            {formatDate(task.dueDate)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <select
+                          value={normaliseStatus(task.status)}
+                          onChange={(e) => handleStatusChange(task._id, e.target.value)}
+                          className={`rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-semibold outline-none cursor-pointer ${status.cls}`}
+                        >
+                          {Object.entries(STATUS_STYLES).map(([val, { label }]) => (
+                            <option key={val} value={val}>{label}</option>
+                          ))}
+                        </select>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => { setEditTask(task); setShowModal(true); }}
+                            className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-slate-50"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirm(task._id)}
+                            className="rounded-xl border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-100"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* DESKTOP TABLE */}
+            <div className="overflow-x-auto hidden md:block">
               <table className="min-w-[900px] w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-slate-50">

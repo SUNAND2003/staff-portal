@@ -286,7 +286,7 @@ const loadPunchHistory = async () => {
         </div>
 
         {/* STATS */}
-        <section className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-5">
+        <section className="mb-6 sm:mb-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           <StatCard label="Total Days"  value={stats.total}   />
           <StatCard label="Present"     value={stats.present} />
           <StatCard label="Absent"      value={stats.absent}  />
@@ -295,10 +295,10 @@ const loadPunchHistory = async () => {
         </section>
 
         {/* TABS */}
-        <div className="mb-6 flex gap-1 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-sm w-fit">
+        <div className="mb-6 flex gap-1 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-sm w-full sm:w-fit">
           <button
             onClick={() => setActiveTab("summary")}
-            className={`rounded-xl px-5 py-2.5 text-sm font-bold transition-all ${
+            className={`flex-1 sm:flex-initial rounded-xl px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-bold transition-all ${
               activeTab === "summary"
                 ? "bg-gray-900 text-white shadow"
                 : "text-gray-500 hover:text-gray-900"
@@ -308,13 +308,13 @@ const loadPunchHistory = async () => {
           </button>
           <button
             onClick={() => setActiveTab("punch")}
-            className={`rounded-xl px-5 py-2.5 text-sm font-bold transition-all ${
+            className={`flex-1 sm:flex-initial rounded-xl px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-bold transition-all ${
               activeTab === "punch"
                 ? "bg-gray-900 text-white shadow"
                 : "text-gray-500 hover:text-gray-900"
             }`}
           >
-            Full Punch Log
+            Punch History
           </button>
         </div>
 

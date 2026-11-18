@@ -62,19 +62,26 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
           ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
-        <button onClick={() => setMobileOpen(false)} className="mb-2 ml-auto text-white md:hidden">
-          <X size={24} />
-        </button>
+        <div className="flex items-center justify-between pb-2 md:hidden">
+          <span className="text-xs font-bold uppercase tracking-widest text-white/50">Navigation</span>
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white transition-all"
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
+        </div>
 
         <div style={{
           display: "flex", justifyContent: "center", alignItems: "center",
-          padding: "12px 16px", marginBottom: "40px",
+          padding: "8px 16px", marginBottom: "20px",
           borderBottom: "1px solid rgba(255,255,255,0.1)",
         }}>
           <img src={logo} alt="Hexa Logo" style={{
-            width: "200px", height: "auto", marginTop: "20px",
-            objectFit: "contain", left: "10%",
-            transform: "translateX(-10%)", filter: "brightness(0) invert(1)",
+            width: "180px", height: "auto", marginTop: "10px",
+            objectFit: "contain",
+            filter: "brightness(0) invert(1)",
           }} />
         </div>
 

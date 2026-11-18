@@ -34,14 +34,14 @@ const getStatus = (leave) => {
 
 function StatCard({ icon: Icon, title, value, color }) {
   return (
-    <div className="flex-1 min-w-[220px] rounded-[30px] border border-gray-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
-      <div className="flex items-center gap-4">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: `${color}18` }}>
-          <Icon size={24} color={color} />
+    <div className="w-full rounded-2xl sm:rounded-[30px] border border-gray-200 bg-white p-4 sm:p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl" style={{ background: `${color}18` }}>
+          <Icon size={22} color={color} />
         </div>
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.08em] text-gray-500">{title}</p>
-          <h2 className="mt-1 text-3xl font-black text-gray-900">{value}</h2>
+        <div className="min-w-0">
+          <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.08em] text-gray-500 truncate">{title}</p>
+          <h2 className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-black text-gray-900 truncate">{value}</h2>
         </div>
       </div>
     </div>
@@ -144,7 +144,7 @@ export default function AdminLeave() {
           </div>
 
           {/* STATS */}
-          <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mb-6 sm:mb-8 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             <StatCard icon={FileText}     title="Total Requests" value={totalLeaves}    color="#2563eb" />
             <StatCard icon={CheckCircle2} title="Approved"       value={approvedLeaves} color="#16a34a" />
             <StatCard icon={Clock3}       title="Pending"        value={pendingLeaves}  color="#d97706" />
@@ -229,16 +229,16 @@ export default function AdminLeave() {
                       </div>
 
                       {status === "Pending" ? (
-                        <div className="flex flex-col gap-3">
+                        <div className="grid grid-cols-2 sm:flex sm:flex-col gap-2.5 sm:gap-3 w-full sm:w-auto">
                           <button
                             onClick={() => handleLeave(leave._id || leave.id, "Approved")}
-                            className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-emerald-700 hover:shadow-lg"
+                            className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-emerald-700 hover:shadow-lg active:scale-95"
                           >
                             <CheckCircle2 size={16} /> Approve
                           </button>
                           <button
                             onClick={() => handleLeave(leave._id || leave.id, "Rejected")}
-                            className="flex items-center gap-2 rounded-2xl bg-red-500 px-5 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-red-600 hover:shadow-lg"
+                            className="flex items-center justify-center gap-2 rounded-2xl bg-red-500 px-5 py-3 text-sm font-bold text-white transition-all duration-300 hover:bg-red-600 hover:shadow-lg active:scale-95"
                           >
                             <XCircle size={16} /> Reject
                           </button>

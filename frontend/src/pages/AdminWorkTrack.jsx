@@ -255,7 +255,7 @@ export default function AdminWorkTrack() {
         <div className="mx-auto w-full max-w-6xl p-5 md:p-7">
 
           {/* STATS */}
-          <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mb-6 sm:mb-8 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             <StatCard icon={Briefcase}   label="Total Tasks" value={total}     color="#6366f1" />
             <StatCard icon={PlayCircle}  label="Running"     value={running}   color="#f59e0b" />
             <StatCard icon={PauseCircle} label="Paused"      value={paused}    color="#3b82f6" />
@@ -263,36 +263,36 @@ export default function AdminWorkTrack() {
           </div>
 
           {/* TOTAL TIME */}
-          <div className="mb-8 rounded-[32px] bg-gradient-to-r from-[#111827] to-[#374151] p-6 text-white shadow-2xl">
+          <div className="mb-6 sm:mb-8 rounded-2xl sm:rounded-[32px] bg-gradient-to-r from-[#111827] to-[#374151] p-5 sm:p-6 text-white shadow-xl">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10">
+              <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-white/10 shrink-0">
                 <Clock3 size={24} />
               </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.08em] text-white/70">Total Tracked Time</p>
-                <h2 className="mt-1 text-3xl font-black">{formatTime(totalSecs)}</h2>
+              <div className="min-w-0">
+                <p className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.08em] text-white/70">Total Tracked Time</p>
+                <h2 className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-black font-mono truncate">{formatTime(totalSecs)}</h2>
               </div>
             </div>
           </div>
 
           {/* FILTERS */}
-          <div className="mb-6 rounded-[30px] border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-wrap items-center gap-4">
+          <div className="mb-6 rounded-2xl sm:rounded-[30px] border border-gray-200 bg-white p-4 sm:p-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search tasks, descriptions, employees..."
-                className="min-w-[200px] flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 outline-none transition-all duration-300 focus:border-[#111827] focus:bg-white focus:shadow-lg"
+                className="w-full sm:flex-1 min-w-[200px] rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 outline-none transition-all duration-300 focus:border-[#111827] focus:bg-white focus:shadow-lg"
               />
 
               {/* EMPLOYEE FILTER DROPDOWN */}
-              <div className="flex items-center gap-2">
-                <Users size={16} className="text-gray-400" />
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Users size={16} className="text-gray-400 shrink-0" />
                 <select
                   value={selectedEmployee}
                   onChange={(e) => setSelectedEmployee(e.target.value)}
-                  className="rounded-2xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-xs font-bold text-gray-700 outline-none transition-all duration-300 focus:border-[#111827] focus:bg-white focus:shadow-lg cursor-pointer"
+                  className="w-full sm:w-auto rounded-2xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-xs font-bold text-gray-700 outline-none transition-all duration-300 focus:border-[#111827] focus:bg-white focus:shadow-lg cursor-pointer"
                 >
                   <option value="All">All Employees ({employees.length})</option>
                   {employees.map((emp) => (
@@ -303,12 +303,12 @@ export default function AdminWorkTrack() {
                 </select>
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {["All", "Running", "Paused", "Completed", "Not Started"].map((f) => (
                   <button
                     key={f}
                     onClick={() => setFilter(f)}
-                    className={`rounded-full px-4 py-2 text-xs font-bold transition-all duration-300 ${
+                    className={`rounded-full px-3.5 sm:px-4 py-2 text-xs font-bold transition-all duration-300 ${
                       filter === f
                         ? "bg-gradient-to-r from-[#111827] to-[#374151] text-white shadow-lg"
                         : "border border-gray-200 bg-white text-gray-600 hover:bg-slate-50"

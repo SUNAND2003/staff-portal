@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { attendanceAPI, punchAPI } from "../services/api";
 import useAuthStore from "../store/authStore";
-import { Clock, Coffee, LogOut, AlertTriangle, CheckCircle2, Loader } from "lucide-react";
+import { Clock, Coffee, LogOut, AlertTriangle, CheckCircle2, Loader, Play, Sparkles, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
 
 const formatTime = (seconds) => {
@@ -84,8 +84,8 @@ export default function Dashboard() {
         if (data?.breakSeconds) setBreakTime(data.breakSeconds);
       }
 
-      const punches = await punchAPI.getTodayPunches();
-      setPunches(punches?.punches || punches || []);
+      const punchData = await punchAPI.getTodayPunches();
+      setPunches(punchData?.punches || punchData || []);
     } catch (err) {
       console.error("Error loading attendance:", err);
     } finally {
@@ -137,173 +137,316 @@ export default function Dashboard() {
   const canPunchOut   = attendance?.checkIn && !attendance?.checkOut;
   const canBreakStart = attendance?.checkIn && !attendance?.checkOut && attendance?.status !== "on_break";
   const canBreakEnd   = attendance?.status === "on_break";
-  const isCheckedOut  = attendance?.checkOut;
+  const isCheckedOut  = Boolean(attendance?.checkOut);
 
   if (loading) {
     return (
       <DashboardLayout>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
-          <Loader size={48} className="animate-spin" />
+        <div className="flex h-[70vh] items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader size={36} className="animate-spin text-indigo-600" />
+            <p className="text-sm font-semibold text-slate-500">Loading your workspace...</p>
+          </div>
         </div>
       </DashboardLayout>
     );
   }
 
+  const todayDateFormatted = new Date().toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
   return (
     <DashboardLayout>
-      <div style={{ padding: "24px", background: "#f8fafc", minHeight: "100vh" }}>
-        <h1 style={{ fontSize: 32, fontWeight: 700, color: "#0f172a", margin: "0 0 24px" }}>
-          Welcome, {user?.name || "Employee"}
-        </h1>
+      <div className="w-full max-w-6xl mx-auto space-y-6">
 
-        {/* Status Section */}
-        <div style={{ background: "#ffffff", borderRadius: 16, padding: "24px", marginBottom: 24, border: "1px solid #e2e8f0" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-            <h2 style={{ fontSize: 18, fontWeight: 600, color: "#0f172a", margin: 0 }}>Today's Status</h2>
-            {!isCheckedOut && attendance?.checkIn && (
-              <span style={{
-                display: "inline-flex", alignItems: "center", gap: 8,
-                padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600,
-                background: attendance?.status === "on_break" ? "#fffbeb" : "#ecfdf5",
-                color: attendance?.status === "on_break" ? "#92400e" : "#065f46",
-                border: `1px solid ${attendance?.status === "on_break" ? "#fde68a" : "#a7f3d0"}`
-              }}>
-                <span style={{
-                  width: 8, height: 8, borderRadius: "50%",
-                  background: attendance?.status === "on_break" ? "#f59e0b" : "#10b981"
-                }} />
-                {attendance?.status === "on_break" ? "On Break" : "Working"}
-              </span>
-            )}
-            {isCheckedOut && (
-              <span style={{
-                display: "inline-flex", alignItems: "center", gap: 8,
-                padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600,
-                background: "#eef2ff", color: "#3730a3", border: "1px solid #c7d2fe"
-              }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6366f1" }} />
-                Completed
-              </span>
-            )}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 16 }}>
-            <div style={{ background: "#f8fafc", padding: "16px", borderRadius: 12, border: "1px solid #e2e8f0" }}>
-              <p style={{ margin: 0, fontSize: 12, color: "#64748b", fontWeight: 600, marginBottom: 8 }}>CHECK IN</p>
-              <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>
-                {formatTimeHM(attendance?.checkIn)}
-              </p>
-            </div>
-            <div style={{ background: "#f8fafc", padding: "16px", borderRadius: 12, border: "1px solid #e2e8f0" }}>
-              <p style={{ margin: 0, fontSize: 12, color: "#64748b", fontWeight: 600, marginBottom: 8 }}>CHECK OUT</p>
-              <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>
-                {formatTimeHM(attendance?.checkOut)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Timers */}
-        {attendance?.checkIn && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
-            <div style={{
-              background: "#ffffff", borderRadius: 16, padding: "24px",
-              border: "1px solid #e2e8f0",
-              borderTop: `3px solid ${tickingRef.current === "work" ? "#10b981" : "#cbd5e1"}`
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                <Clock size={18} color={tickingRef.current === "work" ? "#10b981" : "#94a3b8"} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>WORK TIME</span>
-                {tickingRef.current === "work" && (
-                  <span style={{ marginLeft: "auto", width: 8, height: 8, borderRadius: "50%", background: "#10b981", animation: "pulse 1.5s infinite" }} />
-                )}
+        {/* HERO / WELCOME BANNER */}
+        <div className="relative overflow-hidden rounded-[28px] sm:rounded-[34px] bg-gradient-to-r from-[#111827] via-[#1f2937] to-[#374151] p-6 sm:p-8 text-white shadow-xl">
+          <div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/5 blur-xl pointer-events-none" />
+          <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-white/70 text-xs font-semibold tracking-wider uppercase mb-1">
+                <Calendar size={14} className="text-emerald-400" />
+                <span>{todayDateFormatted}</span>
               </div>
-              <p style={{ margin: 0, fontSize: 36, fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>
-                {formatTime(workTime)}
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">
+                Welcome back, {user?.name?.split(" ")[0] || "Employee"}! 👋
+              </h1>
+              <p className="mt-1 text-xs sm:text-sm text-white/70">
+                {user?.department ? `${user.department} • ` : ""}Track your daily work hours and punch activity
               </p>
             </div>
-            <div style={{
-              background: "#ffffff", borderRadius: 16, padding: "24px",
-              border: "1px solid #e2e8f0",
-              borderTop: `3px solid ${tickingRef.current === "break" ? "#f59e0b" : "#cbd5e1"}`
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                <Coffee size={18} color={tickingRef.current === "break" ? "#f59e0b" : "#94a3b8"} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>BREAK TIME</span>
-                {tickingRef.current === "break" && (
-                  <span style={{ marginLeft: "auto", width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", animation: "pulse 1.5s infinite" }} />
-                )}
-              </div>
-              <p style={{ margin: 0, fontSize: 36, fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>
-                {formatTime(breakTime)}
-              </p>
-            </div>
-          </div>
-        )}
 
-        {/* Action Buttons */}
-        <div style={{ background: "#ffffff", borderRadius: 16, padding: "24px", marginBottom: 24, border: "1px solid #e2e8f0" }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: "#0f172a", margin: "0 0 16px" }}>Actions</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
-            {canPunchIn && (
-              <button onClick={() => handlePunch("Punch In", "Working")} disabled={punching}
-                style={{ padding: "12px 16px", borderRadius: 10, background: "#10b981", color: "#fff", border: "none", fontWeight: 600, cursor: punching ? "not-allowed" : "pointer", opacity: punching ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <CheckCircle2 size={16} /> Start Work
-              </button>
-            )}
-            {canBreakStart && (
-              <button onClick={() => handlePunch("Break Start", "On Break")} disabled={punching}
-                style={{ padding: "12px 16px", borderRadius: 10, background: "#f59e0b", color: "#fff", border: "none", fontWeight: 600, cursor: punching ? "not-allowed" : "pointer", opacity: punching ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <Coffee size={16} /> Start Break
-              </button>
-            )}
-            {canBreakEnd && (
-              <button onClick={() => handlePunch("Break End", "Working")} disabled={punching}
-                style={{ padding: "12px 16px", borderRadius: 10, background: "#06b6d4", color: "#fff", border: "none", fontWeight: 600, cursor: punching ? "not-allowed" : "pointer", opacity: punching ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <CheckCircle2 size={16} /> Resume Work
-              </button>
-            )}
-            {canPunchOut && (
-              <button onClick={() => setShowModal(true)} disabled={punching}
-                style={{ padding: "12px 16px", borderRadius: 10, background: "#ef4444", color: "#fff", border: "none", fontWeight: 600, cursor: punching ? "not-allowed" : "pointer", opacity: punching ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <LogOut size={16} /> Check Out
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Punch History */}
-        {punches.length > 0 && (
-          <div style={{ background: "#ffffff", borderRadius: 16, padding: "24px", border: "1px solid #e2e8f0" }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: "#0f172a", margin: "0 0 16px" }}>Today's Activity</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {punches.map((p) => (
-                <div key={p._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#f8fafc", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>{p.action}</span>
-                  <span style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>{formatTimeHM(p.timestamp)}</span>
+            {/* LIVE STATUS PILL */}
+            <div>
+              {!attendance?.checkIn && !isCheckedOut && (
+                <div className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2.5 text-xs font-bold text-white/80 backdrop-blur-md border border-white/10">
+                  <span className="h-2 w-2 rounded-full bg-slate-400" />
+                  Not Clocked In
                 </div>
-              ))}
+              )}
+
+              {!isCheckedOut && attendance?.checkIn && (
+                <div className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold backdrop-blur-md shadow-sm border ${
+                  attendance?.status === "on_break"
+                    ? "bg-amber-500/20 text-amber-300 border-amber-400/30"
+                    : "bg-emerald-500/20 text-emerald-300 border-emerald-400/30"
+                }`}>
+                  <span className="relative flex h-2 w-2">
+                    <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
+                      attendance?.status === "on_break" ? "bg-amber-400" : "bg-emerald-400"
+                    }`} />
+                    <span className={`relative inline-flex h-2 w-2 rounded-full ${
+                      attendance?.status === "on_break" ? "bg-amber-500" : "bg-emerald-500"
+                    }`} />
+                  </span>
+                  {attendance?.status === "on_break" ? "On Break" : "Currently Working"}
+                </div>
+              )}
+
+              {isCheckedOut && (
+                <div className="inline-flex items-center gap-2 rounded-2xl bg-indigo-500/20 text-indigo-300 px-4 py-2.5 text-xs font-bold backdrop-blur-md border border-indigo-400/30">
+                  <CheckCircle2 size={14} className="text-indigo-400" />
+                  Work Day Completed
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
+
+        {/* STATS & TIMERS GRID */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* Check In */}
+          <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm transition-all hover:shadow-md">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] sm:text-xs font-bold tracking-wider uppercase text-slate-500">Check In</span>
+              <span className="h-7 w-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <CheckCircle2 size={15} />
+              </span>
+            </div>
+            <p className="text-lg sm:text-2xl font-bold font-mono text-slate-900">
+              {formatTimeHM(attendance?.checkIn)}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-1 truncate">First punch of day</p>
+          </div>
+
+          {/* Check Out */}
+          <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-sm transition-all hover:shadow-md">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] sm:text-xs font-bold tracking-wider uppercase text-slate-500">Check Out</span>
+              <span className="h-7 w-7 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <LogOut size={15} />
+              </span>
+            </div>
+            <p className="text-lg sm:text-2xl font-bold font-mono text-slate-900">
+              {formatTimeHM(attendance?.checkOut)}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-1 truncate">End of shift</p>
+          </div>
+
+          {/* Live Work Time */}
+          <div className={`rounded-2xl sm:rounded-3xl border p-4 sm:p-5 shadow-sm transition-all hover:shadow-md ${
+            tickingRef.current === "work"
+              ? "bg-emerald-50/50 border-emerald-300 ring-2 ring-emerald-500/20"
+              : "bg-white border-slate-200/80"
+          }`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] sm:text-xs font-bold tracking-wider uppercase text-slate-500">Work Time</span>
+              <span className={`h-7 w-7 rounded-xl flex items-center justify-center ${
+                tickingRef.current === "work" ? "bg-emerald-100 text-emerald-700 animate-pulse" : "bg-slate-100 text-slate-500"
+              }`}>
+                <Clock size={15} />
+              </span>
+            </div>
+            <p className={`text-lg sm:text-2xl font-bold font-mono ${
+              tickingRef.current === "work" ? "text-emerald-700" : "text-slate-900"
+            }`}>
+              {formatTime(workTime)}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {tickingRef.current === "work" ? "Active timer running" : "Accumulated time"}
+            </p>
+          </div>
+
+          {/* Live Break Time */}
+          <div className={`rounded-2xl sm:rounded-3xl border p-4 sm:p-5 shadow-sm transition-all hover:shadow-md ${
+            tickingRef.current === "break"
+              ? "bg-amber-50/50 border-amber-300 ring-2 ring-amber-500/20"
+              : "bg-white border-slate-200/80"
+          }`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] sm:text-xs font-bold tracking-wider uppercase text-slate-500">Break Time</span>
+              <span className={`h-7 w-7 rounded-xl flex items-center justify-center ${
+                tickingRef.current === "break" ? "bg-amber-100 text-amber-700 animate-pulse" : "bg-slate-100 text-slate-500"
+              }`}>
+                <Coffee size={15} />
+              </span>
+            </div>
+            <p className={`text-lg sm:text-2xl font-bold font-mono ${
+              tickingRef.current === "break" ? "text-amber-700" : "text-slate-900"
+            }`}>
+              {formatTime(breakTime)}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {tickingRef.current === "break" ? "Break timer running" : "Total break taken"}
+            </p>
+          </div>
+        </div>
+
+        {/* ACTION CONTROLS */}
+        <div className="rounded-[28px] sm:rounded-[32px] border border-slate-200/80 bg-white p-5 sm:p-7 shadow-sm">
+          <div className="mb-4 sm:mb-5">
+            <h2 className="text-lg sm:text-xl font-black text-slate-900">Punch Actions</h2>
+            <p className="text-xs sm:text-sm text-slate-500">Clock in, pause for breaks, and submit check-out</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {canPunchIn && (
+              <button
+                onClick={() => handlePunch("Punch In", "Working")}
+                disabled={punching}
+                className="flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-95 disabled:opacity-60 cursor-pointer"
+              >
+                <CheckCircle2 size={18} />
+                <span>Start Work</span>
+              </button>
+            )}
+
+            {canBreakStart && (
+              <button
+                onClick={() => handlePunch("Break Start", "On Break")}
+                disabled={punching}
+                className="flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-4 text-sm font-bold text-white shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-95 disabled:opacity-60 cursor-pointer"
+              >
+                <Coffee size={18} />
+                <span>Start Break</span>
+              </button>
+            )}
+
+            {canBreakEnd && (
+              <button
+                onClick={() => handlePunch("Break End", "Working")}
+                disabled={punching}
+                className="flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-4 text-sm font-bold text-white shadow-md shadow-blue-500/20 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-95 disabled:opacity-60 cursor-pointer"
+              >
+                <Play size={18} />
+                <span>Resume Work</span>
+              </button>
+            )}
+
+            {canPunchOut && (
+              <button
+                onClick={() => setShowModal(true)}
+                disabled={punching}
+                className="flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-rose-500 to-red-600 px-5 py-4 text-sm font-bold text-white shadow-md shadow-red-500/20 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-95 disabled:opacity-60 cursor-pointer sm:col-span-2 lg:col-span-1"
+              >
+                <LogOut size={18} />
+                <span>Check Out</span>
+              </button>
+            )}
+
+            {isCheckedOut && (
+              <div className="col-span-full rounded-2xl bg-slate-50 border border-slate-200 p-4 text-center">
+                <p className="text-sm font-semibold text-slate-700">
+                  🎉 You have completed your shift for today. Great work!
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* TODAY'S PUNCH TIMELINE */}
+        <div className="rounded-[28px] sm:rounded-[32px] border border-slate-200/80 bg-white p-5 sm:p-7 shadow-sm">
+          <div className="flex items-center justify-between mb-4 sm:mb-5">
+            <div>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900">Today's Punch Log</h2>
+              <p className="text-xs sm:text-sm text-slate-500">Live timestamped record of today's activities</p>
+            </div>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+              {punches.length} {punches.length === 1 ? "entry" : "entries"}
+            </span>
+          </div>
+
+          {punches.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center">
+              <Clock size={32} className="mx-auto text-slate-300 mb-2" />
+              <p className="text-sm font-semibold text-slate-600">No punch activity recorded yet today</p>
+              <p className="text-xs text-slate-400 mt-0.5">Click "Start Work" to record your first punch</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {punches.map((p, idx) => {
+                const isCheckIn  = p.action === "Punch In";
+                const isCheckOut = p.action === "Punch Out";
+                const isBreak    = p.action?.includes("Break");
+
+                return (
+                  <div key={p._id || idx} className="flex items-center justify-between py-3 sm:py-3.5 first:pt-0 last:pb-0">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        isCheckIn
+                          ? "bg-emerald-100 text-emerald-700"
+                          : isCheckOut
+                          ? "bg-rose-100 text-rose-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}>
+                        {isCheckIn && <CheckCircle2 size={16} />}
+                        {isCheckOut && <LogOut size={16} />}
+                        {isBreak && <Coffee size={16} />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">{p.action}</p>
+                        <p className="text-xs text-slate-400 capitalize">{p.status || "Recorded"}</p>
+                      </div>
+                    </div>
+                    <span className="text-xs sm:text-sm font-mono font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/60">
+                      {formatTimeHM(p.timestamp)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
       </div>
 
-      {/* Check Out Modal */}
+      {/* CHECK OUT CONFIRMATION MODAL */}
       {showModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.45)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "#ffffff", borderRadius: 20, padding: "32px 28px 24px", width: "100%", maxWidth: 380, boxShadow: "0 20px 60px rgba(15,23,42,0.18)", border: "1px solid #e2e8f0" }}>
-            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#fffbeb", border: "2px solid #fde68a", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <AlertTriangle size={28} color="#f59e0b" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-[28px] border border-slate-200 bg-white p-6 sm:p-7 shadow-2xl">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 text-amber-600">
+              <AlertTriangle size={26} />
             </div>
-            <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#0f172a", textAlign: "center" }}>Confirm Check Out</h2>
-            <p style={{ margin: "0 0 20px", fontSize: 14, color: "#64748b", textAlign: "center", lineHeight: 1.6 }}>Are you sure? This action cannot be undone.</p>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 28px", marginBottom: 20 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>TOTAL WORK TIME</span>
-              <span style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 700, color: "#0f172a" }}>{formatTime(workTime)}</span>
+            <h3 className="text-xl font-black text-center text-slate-900">Confirm Check Out</h3>
+            <p className="mt-1 text-center text-xs sm:text-sm text-slate-500">
+              Are you sure you want to clock out for the day? This will complete your attendance record.
+            </p>
+
+            <div className="my-5 rounded-2xl bg-slate-50 border border-slate-200/80 p-4 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Work Time</p>
+              <p className="mt-0.5 text-2xl font-mono font-black text-slate-900">{formatTime(workTime)}</p>
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: "12px 0", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", border: "1px solid #e2e8f0", background: "#ffffff", color: "#475569" }}>Cancel</button>
-              <button onClick={confirmCheckOut} disabled={punching} style={{ flex: 1, padding: "12px 0", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: punching ? "not-allowed" : "pointer", border: "none", background: "#ef4444", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: punching ? 0.7 : 1 }}>
-                <LogOut size={16} /> Check Out
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="rounded-2xl border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmCheckOut}
+                disabled={punching}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-rose-600 py-3 text-sm font-bold text-white shadow-md shadow-rose-600/20 hover:bg-rose-500 transition-all disabled:opacity-60"
+              >
+                <LogOut size={16} />
+                <span>Confirm</span>
               </button>
             </div>
           </div>

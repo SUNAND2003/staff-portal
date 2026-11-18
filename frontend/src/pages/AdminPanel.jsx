@@ -139,12 +139,20 @@ export default function AdminPanel() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* HEADER */}
-        <div className="relative overflow-hidden bg-black px-6 py-5 shadow-2xl">
+        <div className="relative overflow-hidden bg-black px-4 sm:px-6 py-4 sm:py-5 shadow-2xl">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button className="text-white md:hidden" onClick={() => setMobileOpen(true)}><Menu size={24} /></button>
+            <div className="flex items-center gap-3 sm:gap-4">
+              <button className="text-white md:hidden p-2 rounded-xl bg-white/10 active:scale-95 transition-all" onClick={() => setMobileOpen(true)} aria-label="Open menu">
+                <Menu size={20} />
+              </button>
+              <div className="md:hidden">
+                <h1 className="text-base font-black text-white leading-none tracking-wider">HEXA ADMIN</h1>
+                <span className="font-mono text-[11px] text-emerald-400 font-bold">
+                  {now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <div className="hidden items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-white/70 backdrop-blur-md sm:flex">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
@@ -163,15 +171,16 @@ export default function AdminPanel() {
                   </>
                 )}
               </div>
-              <button onClick={refresh} className="rounded-xl bg-white/10 p-2 text-white transition-all hover:bg-white/20">
+              <button onClick={refresh} className="rounded-xl bg-white/10 p-2 text-white transition-all hover:bg-white/20" title="Refresh">
                 <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
               </button>
               <div className="hidden text-right sm:block">
                 <p className="text-sm font-bold text-white">{user?.name}</p>
                 <p className="text-xs text-white/60">Administrator</p>
               </div>
-              <button onClick={handleLogout} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
-                <LogOut size={16} /> Logout
+              <button onClick={handleLogout} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
+                <LogOut size={15} />
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           </div>
@@ -262,7 +271,58 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* MOBILE ATTENDANCE CARDS */}
+            <div className="divide-y divide-gray-100 block md:hidden">
+              {loading ? (
+                <div className="py-16 text-center text-sm text-gray-400">Loading...</div>
+              ) : filtered.length === 0 ? (
+                <div className="py-16 text-center text-sm text-gray-400">No attendance records found.</div>
+              ) : (
+                filtered.map((r, i) => {
+                  const st = STATUS_STYLE[r.status] || STATUS_STYLE["Absent"];
+                  return (
+                    <div key={i} className="p-4 space-y-3 bg-white">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#111827] to-[#374151] text-xs font-bold text-white shadow-md">
+                            {r.name?.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "?"}
+                          </div>
+                          <span className="text-sm font-bold text-gray-900 truncate">{r.name}</span>
+                        </div>
+                        <span className="rounded-xl bg-indigo-100 px-2.5 py-1 text-xs font-bold text-indigo-700 shrink-0">
+                          {r.id || "—"}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-2.5 text-center text-xs">
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Check In</span>
+                          <span className="font-semibold text-gray-800 font-mono">{r.checkIn}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Check Out</span>
+                          <span className="font-semibold text-gray-800 font-mono">{r.checkOut}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Hours</span>
+                          <span className="font-bold text-indigo-600">{r.hours}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-xs text-gray-400 font-medium">Status</span>
+                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${st.bg} ${st.text} ${st.border}`}>
+                          <span className={`h-2 w-2 rounded-full ${st.dot}`} />{r.status}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* DESKTOP ATTENDANCE TABLE */}
+            <div className="overflow-x-auto hidden md:block">
               <table className="min-w-[720px] w-full">
                 <thead>
                   <tr className="border-b border-gray-100 bg-slate-50">
