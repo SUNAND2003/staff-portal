@@ -32,14 +32,24 @@ export default function AdminPanel() {
     }
   }, [user, navigate]);
 
-  const [mobileOpen,   setMobileOpen]   = useState(false);
-  const [attendance,   setAttendance]   = useState([]);
-  const [leaves,       setLeaves]       = useState([]);
-  const [workTasks,    setWorkTasks]    = useState([]);
-  const [lastSync,     setLastSync]     = useState(null);
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [loading,      setLoading]      = useState(true);
-  const [livePunch,    setLivePunch]    = useState([]);
+  const [mobileOpen,        setMobileOpen]        = useState(false);
+  const [attendance,        setAttendance]        = useState([]);
+  const [leaves,            setLeaves]            = useState([]);
+  const [workTasks,         setWorkTasks]         = useState([]);
+  const [lastSync,          setLastSync]          = useState(null);
+  const [lastSyncTimestamp, setLastSyncTimestamp] = useState(() => Date.now());
+  const [now,               setNow]               = useState(() => new Date());
+  const [filterStatus,      setFilterStatus]      = useState("All");
+  const [loading,           setLoading]           = useState(true);
+  const [livePunch,         setLivePunch]         = useState([]);
+
+  // Live real-time clock and ticker (ticks every second)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const refreshLivePunches = useCallback(async () => {
     try {
@@ -62,7 +72,8 @@ export default function AdminPanel() {
       setAttendance((att || []).map(mapAttendanceRecord));
       setLeaves((lvs || []).map(mapLeave));
       setWorkTasks(tasks || []);
-      setLastSync(new Date().toLocaleTimeString());
+      setLastSync(new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }));
+      setLastSyncTimestamp(Date.now());
     } catch (e) {
       console.error("Admin refresh error:", e);
     } finally {
@@ -134,11 +145,24 @@ export default function AdminPanel() {
               <button className="text-white md:hidden" onClick={() => setMobileOpen(true)}><Menu size={24} /></button>
             </div>
             <div className="flex items-center gap-4">
-              {lastSync && (
-                <div className="hidden items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-white/70 backdrop-blur-md sm:flex">
-                  <RefreshCw size={13} /> {lastSync}
-                </div>
-              )}
+              <div className="hidden items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-white/70 backdrop-blur-md sm:flex">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                </span>
+                <Clock size={13} className="text-emerald-400" />
+                <span className="font-mono font-bold text-white tracking-wide">
+                  {now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+                </span>
+                {lastSync && (
+                  <>
+                    <span className="text-white/30">•</span>
+                    <span className="text-white/60">
+                      Synced {Math.max(0, Math.floor((now.getTime() - lastSyncTimestamp) / 1000)) < 5 ? "just now" : `${Math.max(0, Math.floor((now.getTime() - lastSyncTimestamp) / 1000))}s ago`}
+                    </span>
+                  </>
+                )}
+              </div>
               <button onClick={refresh} className="rounded-xl bg-white/10 p-2 text-white transition-all hover:bg-white/20">
                 <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
               </button>

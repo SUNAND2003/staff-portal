@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import AdminSidebar from "../layouts/AdminSidebar";
 import useAuthStore from "../store/authStore";
 import { mapAttendanceRecord } from "../utils/adminData";
-import { Radio, Search, RefreshCw, Menu, Download, Calendar, User, X } from "lucide-react";
+import { Radio, Search, RefreshCw, Menu, Download, Calendar, User, X, Clock } from "lucide-react";
 import { attendanceAPI, punchAPI, employeeAPI } from "../services/api";
 const ACTION_STYLE = {
   "Punch In":    { pill: "bg-emerald-100 text-emerald-700 border border-emerald-200", dot: "bg-emerald-500", label: "Punch In"    },
@@ -40,7 +40,14 @@ export default function AdminAttendance() {
     }
   }, [user, navigate]);
   const [mobileOpen,        setMobileOpen]        = useState(false);
+  const [now,               setNow]               = useState(() => new Date());
   const [search,            setSearch]            = useState("");
+
+  // Live real-time clock ticker
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   const [attendance,        setAttendance]        = useState([]);
   const [liveFeed,          setLiveFeed]          = useState([]);
   const [loading,           setLoading]           = useState(true);
@@ -345,6 +352,16 @@ useEffect(() => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                <div className="hidden items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-white/70 backdrop-blur-md sm:flex">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                  </span>
+                  <Clock size={13} className="text-emerald-400" />
+                  <span className="font-mono font-bold text-white tracking-wide">
+                    {now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+                  </span>
+                </div>
                 <div className="hidden text-right sm:block">
                   <p className="text-sm font-bold text-white">{user?.name}</p>
                   <p className="text-xs text-white/50">Administrator</p>
