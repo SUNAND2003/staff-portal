@@ -175,16 +175,16 @@ export default function WorkTracker() {
             serverId:     l._id,
             title:        l.title,
             description:  l.description || "",
-            running:      !l.endTime && !!l.startTime,
-            paused:       false,
-            completed:    !!l.endTime,
+            running:      !l.endTime && l.status === "in_progress",
+            paused:       l.status === "paused" || l.status === "on_hold",
+            completed:    l.status === "completed" || !!l.endTime,
             startedAt:    l.startTime ? new Date(l.startTime).getTime() : null,
-            elapsed:      l.endTime
+            elapsed:      l.durationSeconds || (l.endTime
               ? Math.floor((new Date(l.endTime) - new Date(l.startTime)) / 1000)
-              : l.startTime
+              : l.startTime && l.status === "in_progress"
               ? Math.floor((Date.now() - new Date(l.startTime)) / 1000)
-              : 0,
-            savedElapsed: 0,
+              : 0),
+            savedElapsed: l.durationSeconds || 0,
             startTime:    l.startTime
               ? new Date(l.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
               : null,
@@ -230,14 +230,29 @@ export default function WorkTracker() {
     update(id, { running: true, paused: false, startedAt: timestamp, startTime: timeFormatted });
   };
 
-  const pauseTask = (id) => {
+  const pauseTask = async (id) => {
     const t = tasks.find((x) => x.id === id);
     update(id, { running: false, paused: true, savedElapsed: t?.elapsed || 0 });
+    if (t?.serverId) {
+      try {
+        await workLogAPI.pauseLog(t.serverId);
+      } catch (e) {
+        console.error("pauseLog failed:", e);
+      }
+    }
   };
 
-  const resumeTask = (id) => {
+  const resumeTask = async (id) => {
+    const t = tasks.find((x) => x.id === id);
     const timestamp = Date.now();
     update(id, { running: true, paused: false, startedAt: timestamp });
+    if (t?.serverId) {
+      try {
+        await workLogAPI.resumeLog(t.serverId);
+      } catch (e) {
+        console.error("resumeLog failed:", e);
+      }
+    }
   };
 
   // Complete: call backend if we have a serverId, otherwise just mark done locally

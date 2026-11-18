@@ -85,13 +85,76 @@ exports.addLog = async (req, res) => {
   }
 };
 
+// ─── PATCH /api/worklogs/:id/pause ───────────────────────────────────────────
+exports.pauseLog = async (req, res) => {
+  try {
+    const log = await WorkLog.findById(req.params.id);
+    if (!log) return res.status(404).json({ message: 'Work log not found.' });
+
+    if (
+      log.employee.toString() !== req.user._id.toString() &&
+      !['admin', 'manager'].includes(req.user.role)
+    ) {
+      return res.status(403).json({ message: 'Access denied.' });
+    }
+
+    if (log.status === 'paused') {
+      return res.json(log);
+    }
+
+    const now = new Date();
+    if (log.startTime && log.status === 'in_progress') {
+      const segSeconds = Math.max(0, Math.floor((now - log.startTime) / 1000));
+      log.durationSeconds = (log.durationSeconds || 0) + segSeconds;
+    }
+    log.status = 'paused';
+    await log.save();
+
+    res.json(log);
+  } catch (err) {
+    console.error('Pause log error:', err);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
+
+// ─── PATCH /api/worklogs/:id/resume ──────────────────────────────────────────
+exports.resumeLog = async (req, res) => {
+  try {
+    const log = await WorkLog.findById(req.params.id);
+    if (!log) return res.status(404).json({ message: 'Work log not found.' });
+
+    if (
+      log.employee.toString() !== req.user._id.toString() &&
+      !['admin', 'manager'].includes(req.user.role)
+    ) {
+      return res.status(403).json({ message: 'Access denied.' });
+    }
+
+    if (log.status === 'in_progress') {
+      return res.json(log);
+    }
+
+    log.startTime = new Date(); // Start fresh segment for elapsed calculation
+    log.status = 'in_progress';
+    await log.save();
+
+    res.json(log);
+  } catch (err) {
+    console.error('Resume log error:', err);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
+
 // ─── PATCH /api/worklogs/:id/end ─────────────────────────────────────────────
 exports.endLog = async (req, res) => {
   try {
     const log = await WorkLog.findById(req.params.id);
     if (!log) return res.status(404).json({ message: 'Work log not found.' });
 
-    if (log.employee.toString() !== req.user._id.toString()) {
+    if (
+      log.employee.toString() !== req.user._id.toString() &&
+      !['admin', 'manager'].includes(req.user.role)
+    ) {
       return res.status(403).json({ message: 'Access denied.' });
     }
     if (log.status === 'completed') {
@@ -99,9 +162,12 @@ exports.endLog = async (req, res) => {
     }
 
     const now = new Date();
-    log.endTime         = now;
-    log.durationSeconds = Math.floor((now - log.startTime) / 1000);
-    log.status          = 'completed';
+    log.endTime = now;
+    if (log.status === 'in_progress' && log.startTime) {
+      const segSeconds = Math.max(0, Math.floor((now - log.startTime) / 1000));
+      log.durationSeconds = (log.durationSeconds || 0) + segSeconds;
+    }
+    log.status = 'completed';
     await log.save();
 
     res.json(log);

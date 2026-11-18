@@ -9,6 +9,8 @@ router.use(protect);
 router.get('/today',        ctrl.getToday);
 router.get('/',             ctrl.getMyLogs);
 router.post('/',            ctrl.addLog);
+router.patch('/:id/pause',  ctrl.pauseLog);
+router.patch('/:id/resume', ctrl.resumeLog);
 router.patch('/:id/end',    ctrl.endLog);
 router.delete('/:id',       ctrl.deleteLog);
 

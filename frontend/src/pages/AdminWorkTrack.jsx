@@ -20,23 +20,33 @@ const formatTime = (seconds = 0) => {
 
 const getTaskDuration = (task) => {
   if (!task) return 0;
-  if (typeof task.durationSeconds === "number" && task.durationSeconds > 0) {
-    return task.durationSeconds;
+  const status = String(task.status || "").toLowerCase().trim();
+  const isPaused = status === "paused" || status === "on_hold" || status === "on-hold" || status === "hold" || Boolean(task.paused);
+  const isCompleted = status === "completed" || Boolean(task.endTime) || Boolean(task.endedAt);
+
+  // If paused or completed, duration is strictly frozen — NEVER add live Date.now()
+  if (isPaused || isCompleted) {
+    if (typeof task.durationSeconds === "number" && task.durationSeconds >= 0) return task.durationSeconds;
+    if (typeof task.duration === "number" && task.duration >= 0) return task.duration;
+    if (typeof task.savedElapsed === "number" && task.savedElapsed >= 0) return task.savedElapsed;
+    const start = task.startTime || task.startedAt || task.createdAt;
+    const end = task.endTime || task.endedAt;
+    if (start && end) {
+      const diff = Math.floor((new Date(end) - new Date(start)) / 1000);
+      return diff > 0 ? diff : 0;
+    }
+    return 0;
   }
-  if (typeof task.duration === "number" && task.duration > 0) {
-    return task.duration;
+
+  // If running / in_progress, accumulate base duration + current active segment
+  const baseSeconds = Number(task.durationSeconds || task.duration || task.savedElapsed || 0);
+  const start = task.startTime || task.startedAt;
+  if (start && (status === "in_progress" || status === "running" || Boolean(task.running))) {
+    const liveDiff = Math.max(0, Math.floor((Date.now() - new Date(start)) / 1000));
+    return baseSeconds + liveDiff;
   }
-  const start = task.startTime || task.startedAt || task.createdAt;
-  const end   = task.endTime || task.endedAt;
-  if (start && end) {
-    const diff = Math.floor((new Date(end) - new Date(start)) / 1000);
-    if (diff > 0) return diff;
-  }
-  if (start && (task.status === "in_progress" || task.status === "running")) {
-    const diff = Math.floor((Date.now() - new Date(start)) / 1000);
-    if (diff > 0) return diff;
-  }
-  return 0;
+
+  return baseSeconds;
 };
 
 const STATUS_META = {
@@ -47,9 +57,10 @@ const STATUS_META = {
 };
 
 function getStatus(task) {
-  if (task.status === "completed")  return "Completed";
-  if (task.status === "in_progress" || task.status === "running") return "Running";
-  if (task.status === "paused")     return "Paused";
+  const status = String(task?.status || "").toLowerCase().trim();
+  if (status === "completed" || Boolean(task?.endTime) || Boolean(task?.endedAt)) return "Completed";
+  if (status === "paused" || status === "on_hold" || status === "on-hold" || status === "hold" || Boolean(task?.paused)) return "Paused";
+  if (status === "in_progress" || status === "running" || Boolean(task?.running)) return "Running";
   return "Not Started";
 }
 
@@ -304,10 +315,12 @@ export default function AdminWorkTrack() {
                       <div className="flex flex-col items-end gap-4">
                         <div className="rounded-2xl bg-slate-50 px-5 py-4 text-right">
                           <div className="flex items-center justify-end gap-2 text-[#111827]">
-                            <Timer size={15} />
+                            <Timer size={15} className={status === "Running" ? "text-emerald-500 animate-pulse" : status === "Paused" ? "text-amber-500" : "text-gray-400"} />
                             <p className="text-sm font-bold">{formatTime(durationSecs)}</p>
                           </div>
-                          <p className="mt-1 text-xs text-gray-400">duration</p>
+                          <p className="mt-1 text-xs font-semibold capitalize text-gray-400">
+                            {status === "Paused" ? "paused (stopped)" : status === "Running" ? "running" : "duration"}
+                          </p>
                         </div>
 
                         {!isConfirming ? (

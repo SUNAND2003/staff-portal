@@ -324,6 +324,10 @@ export const workLogAPI = {
   // data: { title, description, tags }
   addLog: (data) => post('/worklogs', data),
 
+  pauseLog: (id) => patch(`/worklogs/${id}/pause`),
+
+  resumeLog: (id) => patch(`/worklogs/${id}/resume`),
+
   endLog: (id) => patch(`/worklogs/${id}/end`),
 
   deleteLog: (id) => del(`/worklogs/${id}`),

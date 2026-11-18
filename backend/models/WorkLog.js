@@ -21,7 +21,7 @@ const workLogSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ['in_progress', 'completed'],
+      enum: ['in_progress', 'paused', 'on_hold', 'completed'],
       default: 'in_progress',
     },
 
