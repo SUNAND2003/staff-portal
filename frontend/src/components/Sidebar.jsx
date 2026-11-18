@@ -48,12 +48,13 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
 
       <aside
         className={`
-          fixed top-0 left-0 z-50
-          flex min-h-screen w-72 flex-col
+          fixed inset-y-0 left-0 z-50
+          flex h-screen w-72 flex-shrink-0 flex-col
           border-r border-white/10 bg-black
           px-4 py-4
+          overflow-y-auto
           transition-transform duration-300
-          md:static
+          md:sticky md:top-0 md:h-screen md:translate-x-0
           ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >

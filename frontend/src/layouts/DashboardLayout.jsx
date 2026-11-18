@@ -10,7 +10,7 @@ export default function DashboardLayout({ children }) {
 
   return (
 
-    <div className="flex min-h-screen bg-slate-100 overflow-hidden">
+    <div className="flex min-h-screen w-full bg-slate-100">
 
       {/* Sidebar */}
       <Sidebar
@@ -19,7 +19,7 @@ export default function DashboardLayout({ children }) {
       />
 
       {/* Main */}
-      <main className="flex-1 w-full overflow-y-auto">
+      <main className="flex-1 min-w-0 w-full">
 
         {/* Mobile Header */}
         <div className="md:hidden bg-white shadow-sm p-4 flex items-center justify-between sticky top-0 z-30">
