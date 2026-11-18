@@ -9,12 +9,34 @@ import { workLogAPI } from "../services/api";
 import { Briefcase, Clock3, CheckCircle2, PlayCircle, PauseCircle, Menu, RefreshCw, Timer, Trash2 } from "lucide-react";
 
 const formatTime = (seconds = 0) => {
-  const hrs  = Math.floor(seconds / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
+  const s = Math.max(0, Math.floor(seconds || 0));
+  const hrs  = Math.floor(s / 3600);
+  const mins = Math.floor((s % 3600) / 60);
+  const secs = s % 60;
   if (hrs  > 0) return `${hrs}h ${mins}m ${secs}s`;
   if (mins > 0) return `${mins}m ${secs}s`;
   return `${secs}s`;
+};
+
+const getTaskDuration = (task) => {
+  if (!task) return 0;
+  if (typeof task.durationSeconds === "number" && task.durationSeconds > 0) {
+    return task.durationSeconds;
+  }
+  if (typeof task.duration === "number" && task.duration > 0) {
+    return task.duration;
+  }
+  const start = task.startTime || task.startedAt || task.createdAt;
+  const end   = task.endTime || task.endedAt;
+  if (start && end) {
+    const diff = Math.floor((new Date(end) - new Date(start)) / 1000);
+    if (diff > 0) return diff;
+  }
+  if (start && (task.status === "in_progress" || task.status === "running")) {
+    const diff = Math.floor((Date.now() - new Date(start)) / 1000);
+    if (diff > 0) return diff;
+  }
+  return 0;
 };
 
 const STATUS_META = {
@@ -26,7 +48,7 @@ const STATUS_META = {
 
 function getStatus(task) {
   if (task.status === "completed")  return "Completed";
-  if (task.status === "in_progress") return "Running";
+  if (task.status === "in_progress" || task.status === "running") return "Running";
   if (task.status === "paused")     return "Paused";
   return "Not Started";
 }
@@ -89,6 +111,13 @@ export default function AdminWorkTrack() {
     return () => clearInterval(id);
   }, [loadTasks]);
 
+  // Live timer tick for running logs
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const handleDelete = async (id) => {
     try {
       await workLogAPI.deleteLog(id);
@@ -100,18 +129,22 @@ export default function AdminWorkTrack() {
   };
 
   const total      = tasks.length;
-  const running    = tasks.filter((t) => t.status === "in_progress").length;
+  const running    = tasks.filter((t) => t.status === "in_progress" || t.status === "running").length;
   const paused     = tasks.filter((t) => t.status === "paused").length;
   const completed  = tasks.filter((t) => t.status === "completed").length;
-  const totalSecs  = tasks.reduce((acc, t) => acc + (t.duration || 0), 0);
+  const totalSecs  = tasks.reduce((acc, t) => acc + getTaskDuration(t), 0);
 
   const filtered = tasks.filter((task) => {
     const status = getStatus(task);
     const matchFilter = filter === "All" || status === filter;
+    const empName = task.employee?.name || "";
+    const empId = task.employee?.employeeId || "";
     const matchSearch =
       !search ||
       task.title?.toLowerCase().includes(search.toLowerCase()) ||
-      task.description?.toLowerCase().includes(search.toLowerCase());
+      (task.description || "").toLowerCase().includes(search.toLowerCase()) ||
+      empName.toLowerCase().includes(search.toLowerCase()) ||
+      empId.toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
 
@@ -219,27 +252,50 @@ export default function AdminWorkTrack() {
                 const meta   = STATUS_META[status];
                 const isConfirming = confirmId === task._id;
 
+                const durationSecs = getTaskDuration(task);
+
                 return (
                   <div key={task._id} className="rounded-[32px] border border-gray-200 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-2xl">
                     <div className="flex flex-wrap justify-between gap-5">
 
                       <div className="flex-1">
+                        {task.employee && (
+                          <div className="mb-2.5 flex items-center gap-2">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white shadow-sm">
+                              {task.employee.name?.[0]?.toUpperCase() || "E"}
+                            </div>
+                            <span className="text-xs font-bold text-gray-800">{task.employee.name}</span>
+                            {task.employee.department && (
+                              <span className="text-xs text-gray-400">· {task.employee.department}</span>
+                            )}
+                            {task.employee.employeeId && (
+                              <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                                {task.employee.employeeId}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <div className="mb-3 flex flex-wrap items-center gap-3">
                           <h3 className="text-lg font-bold text-gray-900">{task.title}</h3>
                           <span className={`rounded-full px-3 py-1 text-xs font-bold ${meta.cls}`}>{meta.label}</span>
                         </div>
                         {task.description && (
-                          <p className="mb-5 text-sm leading-7 text-gray-500">{task.description}</p>
+                          <p className="mb-4 text-sm leading-6 text-gray-500">{task.description}</p>
                         )}
-                        <div className="flex flex-wrap gap-3">
-                          {task.createdAt && (
-                            <span className="rounded-xl bg-indigo-100 px-3 py-2 text-xs font-bold text-indigo-700">
-                              Created: {new Date(task.createdAt).toLocaleDateString()}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {(task.startTime || task.startedAt) && (
+                            <span className="rounded-xl bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 border border-indigo-100">
+                              Start: {new Date(task.startTime || task.startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             </span>
                           )}
-                          {task.endedAt && (
-                            <span className="rounded-xl bg-emerald-100 px-3 py-2 text-xs font-bold text-emerald-700">
-                              Ended: {new Date(task.endedAt).toLocaleDateString()}
+                          {(task.endTime || task.endedAt) && (
+                            <span className="rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 border border-emerald-100">
+                              End: {new Date(task.endTime || task.endedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          )}
+                          {task.date && (
+                            <span className="rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                              {task.date}
                             </span>
                           )}
                         </div>
@@ -249,7 +305,7 @@ export default function AdminWorkTrack() {
                         <div className="rounded-2xl bg-slate-50 px-5 py-4 text-right">
                           <div className="flex items-center justify-end gap-2 text-[#111827]">
                             <Timer size={15} />
-                            <p className="text-sm font-bold">{formatTime(task.duration || 0)}</p>
+                            <p className="text-sm font-bold">{formatTime(durationSecs)}</p>
                           </div>
                           <p className="mt-1 text-xs text-gray-400">duration</p>
                         </div>
@@ -271,7 +327,7 @@ export default function AdminWorkTrack() {
                       </div>
 
                     </div>
-                    <ProgressBar pct={meta.bar} />
+                    <ProgressBar pct={status === "Completed" ? 100 : status === "Running" ? 65 : 40} />
                   </div>
                 );
               })}
