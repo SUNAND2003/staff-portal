@@ -40,7 +40,7 @@ exports.getAllLogs = async (req, res) => {
     if (employeeId) filter.employee = employeeId;
 
     const logs = await WorkLog.find(filter)
-      .populate('employee', 'name employeeId department avatar')
+      .populate('employee', 'name employeeId department avatar role email')
       .sort({ startTime: -1 });
 
     res.json(logs);

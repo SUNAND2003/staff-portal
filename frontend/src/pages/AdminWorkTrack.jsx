@@ -5,8 +5,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminSidebar from "../layouts/AdminSidebar";
 import useAuthStore from "../store/authStore";
-import { workLogAPI } from "../services/api";
-import { Briefcase, Clock3, CheckCircle2, PlayCircle, PauseCircle, Menu, RefreshCw, Timer, Trash2 } from "lucide-react";
+import { workLogAPI, employeeAPI } from "../services/api";
+import { Briefcase, Clock3, CheckCircle2, PlayCircle, PauseCircle, Menu, RefreshCw, Timer, Trash2, User, Users } from "lucide-react";
 
 const formatTime = (seconds = 0) => {
   const s = Math.max(0, Math.floor(seconds || 0));
@@ -96,12 +96,14 @@ export default function AdminWorkTrack() {
     if (!user || user.role !== "admin") navigate("/dashboard", { replace: true });
   }, [user, navigate]);
 
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [tasks,      setTasks]      = useState([]);
-  const [filter,     setFilter]     = useState("All");
-  const [search,     setSearch]     = useState("");
-  const [confirmId,  setConfirmId]  = useState(null);
-  const [loading,    setLoading]    = useState(false);
+  const [mobileOpen,       setMobileOpen]       = useState(false);
+  const [tasks,            setTasks]            = useState([]);
+  const [employees,        setEmployees]        = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState("All");
+  const [filter,           setFilter]           = useState("All");
+  const [search,           setSearch]           = useState("");
+  const [confirmId,        setConfirmId]        = useState(null);
+  const [loading,          setLoading]          = useState(false);
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -116,11 +118,22 @@ export default function AdminWorkTrack() {
     }
   }, []);
 
+  const loadEmployees = useCallback(async () => {
+    try {
+      const data = await employeeAPI.getAll();
+      const list = Array.isArray(data) ? data : (data?.employees || data?.data || []);
+      setEmployees(list);
+    } catch (err) {
+      console.error("Error loading employees for work track:", err);
+    }
+  }, []);
+
   useEffect(() => {
     loadTasks();
+    loadEmployees();
     const id = setInterval(loadTasks, 5000);
     return () => clearInterval(id);
-  }, [loadTasks]);
+  }, [loadTasks, loadEmployees]);
 
   // Live timer tick for running logs
   const [, setTick] = useState(0);
@@ -139,24 +152,65 @@ export default function AdminWorkTrack() {
     }
   };
 
+  const getEmployeeInfo = useCallback((task) => {
+    if (task?.employee && typeof task.employee === "object" && task.employee.name) {
+      return {
+        id: task.employee._id || task.employeeId || "",
+        name: task.employee.name,
+        department: task.employee.department || "",
+        employeeId: task.employee.employeeId || task.employeeId || "",
+        avatar: task.employee.avatar || "",
+      };
+    }
+    const rawId = typeof task?.employee === "string" ? task.employee : (task?.employeeId || "");
+    if (rawId && Array.isArray(employees)) {
+      const found = employees.find((e) => e._id === rawId || e.employeeId === rawId || e.id === rawId);
+      if (found) {
+        return {
+          id: found._id || found.employeeId || "",
+          name: found.name,
+          department: found.department || "",
+          employeeId: found.employeeId || "",
+          avatar: found.avatar || "",
+        };
+      }
+    }
+    return {
+      id: task?.employeeId || "",
+      name: task?.employeeName || (task?.employeeId ? `Employee ${task.employeeId}` : "Unassigned / General"),
+      department: task?.department || "",
+      employeeId: task?.employeeId || "",
+      avatar: "",
+    };
+  }, [employees]);
+
   const total      = tasks.length;
   const running    = tasks.filter((t) => t.status === "in_progress" || t.status === "running").length;
-  const paused     = tasks.filter((t) => t.status === "paused").length;
+  const paused     = tasks.filter((t) => t.status === "paused" || t.status === "on_hold").length;
   const completed  = tasks.filter((t) => t.status === "completed").length;
   const totalSecs  = tasks.reduce((acc, t) => acc + getTaskDuration(t), 0);
 
   const filtered = tasks.filter((task) => {
     const status = getStatus(task);
     const matchFilter = filter === "All" || status === filter;
-    const empName = task.employee?.name || "";
-    const empId = task.employee?.employeeId || "";
+    const emp = getEmployeeInfo(task);
+
+    const matchEmployee =
+      selectedEmployee === "All" ||
+      emp.id === selectedEmployee ||
+      emp.employeeId === selectedEmployee ||
+      emp.name.toLowerCase() === selectedEmployee.toLowerCase() ||
+      task.employee?._id === selectedEmployee;
+
     const matchSearch =
       !search ||
       task.title?.toLowerCase().includes(search.toLowerCase()) ||
       (task.description || "").toLowerCase().includes(search.toLowerCase()) ||
-      empName.toLowerCase().includes(search.toLowerCase()) ||
-      empId.toLowerCase().includes(search.toLowerCase());
-    return matchFilter && matchSearch;
+      emp.name.toLowerCase().includes(search.toLowerCase()) ||
+      emp.employeeId.toLowerCase().includes(search.toLowerCase()) ||
+      emp.department.toLowerCase().includes(search.toLowerCase());
+
+    return matchFilter && matchEmployee && matchSearch;
   });
 
   return (
@@ -223,14 +277,32 @@ export default function AdminWorkTrack() {
 
           {/* FILTERS */}
           <div className="mb-6 rounded-[30px] border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search tasks..."
-                className="min-w-[220px] flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 outline-none transition-all duration-300 focus:border-[#111827] focus:bg-white focus:shadow-lg"
+                placeholder="Search tasks, descriptions, employees..."
+                className="min-w-[200px] flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 outline-none transition-all duration-300 focus:border-[#111827] focus:bg-white focus:shadow-lg"
               />
+
+              {/* EMPLOYEE FILTER DROPDOWN */}
+              <div className="flex items-center gap-2">
+                <Users size={16} className="text-gray-400" />
+                <select
+                  value={selectedEmployee}
+                  onChange={(e) => setSelectedEmployee(e.target.value)}
+                  className="rounded-2xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-xs font-bold text-gray-700 outline-none transition-all duration-300 focus:border-[#111827] focus:bg-white focus:shadow-lg cursor-pointer"
+                >
+                  <option value="All">All Employees ({employees.length})</option>
+                  {employees.map((emp) => (
+                    <option key={emp._id || emp.employeeId} value={emp._id || emp.employeeId || emp.name}>
+                      {emp.name} {emp.department ? `(${emp.department})` : ""} {emp.employeeId ? `· ${emp.employeeId}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="flex flex-wrap gap-2">
                 {["All", "Running", "Paused", "Completed", "Not Started"].map((f) => (
                   <button
@@ -264,28 +336,36 @@ export default function AdminWorkTrack() {
                 const isConfirming = confirmId === task._id;
 
                 const durationSecs = getTaskDuration(task);
+                const emp = getEmployeeInfo(task);
 
                 return (
                   <div key={task._id} className="rounded-[32px] border border-gray-200 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-2xl">
                     <div className="flex flex-wrap justify-between gap-5">
 
                       <div className="flex-1">
-                        {task.employee && (
-                          <div className="mb-2.5 flex items-center gap-2">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white shadow-sm">
-                              {task.employee.name?.[0]?.toUpperCase() || "E"}
-                            </div>
-                            <span className="text-xs font-bold text-gray-800">{task.employee.name}</span>
-                            {task.employee.department && (
-                              <span className="text-xs text-gray-400">· {task.employee.department}</span>
+                        {/* PROMINENT EMPLOYEE BADGE (WHICH EMPLOYEE) */}
+                        <div className="mb-3.5 flex flex-wrap items-center gap-2.5 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/90 via-slate-50 to-white px-3.5 py-2 w-fit shadow-xs">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#111827] text-[11px] font-black text-white shadow-sm ring-2 ring-indigo-200">
+                            {emp.name?.[0]?.toUpperCase() || "E"}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-xs">
+                            <span className="font-bold text-gray-500 uppercase text-[10px] tracking-wider">Employee:</span>
+                            <span className="font-extrabold text-gray-900 text-sm">
+                              {emp.name}
+                            </span>
+                            {emp.department && (
+                              <span className="rounded-lg bg-white border border-gray-200 px-2.5 py-0.5 text-[11px] font-bold text-gray-700 shadow-2xs">
+                                {emp.department}
+                              </span>
                             )}
-                            {task.employee.employeeId && (
-                              <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                                {task.employee.employeeId}
+                            {emp.employeeId && (
+                              <span className="rounded-lg bg-indigo-100/90 border border-indigo-200 px-2 py-0.5 text-[10px] font-mono font-bold text-indigo-800">
+                                ID: {emp.employeeId}
                               </span>
                             )}
                           </div>
-                        )}
+                        </div>
+
                         <div className="mb-3 flex flex-wrap items-center gap-3">
                           <h3 className="text-lg font-bold text-gray-900">{task.title}</h3>
                           <span className={`rounded-full px-3 py-1 text-xs font-bold ${meta.cls}`}>{meta.label}</span>
