@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 
 import { Menu } from "lucide-react";
@@ -37,11 +37,13 @@ export default function DashboardLayout({ children }) {
             HEXA
           </h1>
 
-          <img
-            src="https://i.pravatar.cc/40"
-            alt="profile"
-            className="w-10 h-10 rounded-full"
-          />
+          <Link to="/profile" title="View Profile">
+            <img
+              src="https://i.pravatar.cc/40"
+              alt="profile"
+              className="w-10 h-10 rounded-full hover:ring-2 hover:ring-blue-500 transition-all cursor-pointer"
+            />
+          </Link>
 
         </div>
 

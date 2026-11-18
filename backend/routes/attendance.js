@@ -16,5 +16,7 @@ router.get('/report',      ctrl.getReport);
 
 // Admin/Manager routes
 router.get('/all',         managerOrAdmin, ctrl.getAllAttendance);
+router.patch('/:id',       managerOrAdmin, ctrl.updateAttendance);
+router.put('/:id',         managerOrAdmin, ctrl.updateAttendance);
 
 module.exports = router;

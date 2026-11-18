@@ -247,3 +247,47 @@ exports.getReport = async (req, res) => {
     res.status(500).json({ message: 'Server error.' });
   }
 };
+
+// ─── PATCH /api/attendance/:id  (admin/manager update) ────────────────────────
+exports.updateAttendance = async (req, res) => {
+  try {
+    const record = await Attendance.findById(req.params.id);
+    if (!record) return res.status(404).json({ message: 'Attendance record not found.' });
+
+    const { status, checkIn, checkOut, isLate, totalHours, notes } = req.body;
+    if (status !== undefined) {
+      const map = {
+        present: 'working',
+        working: 'working',
+        late: 'working',
+        on_break: 'on_break',
+        break: 'on_break',
+        checked_out: 'checked_out',
+        absent: 'absent',
+        on_leave: 'on_leave',
+        leave: 'on_leave',
+      };
+      const norm = String(status).toLowerCase().trim().replace(/[-\s]+/g, '_');
+      record.status = map[norm] || record.status;
+      if (norm === 'late') record.isLate = true;
+      else if (norm === 'present' || norm === 'working') record.isLate = false;
+    }
+    if (checkIn !== undefined) record.checkIn = checkIn ? new Date(checkIn) : null;
+    if (checkOut !== undefined) record.checkOut = checkOut ? new Date(checkOut) : null;
+    if (isLate !== undefined) record.isLate = Boolean(isLate);
+    if (totalHours !== undefined) record.totalHours = Number(totalHours);
+    if (notes !== undefined) record.notes = String(notes);
+
+    if (record.status === 'working' && !record.checkIn) {
+      record.checkIn = new Date();
+    }
+
+    await record.save();
+    const updated = await Attendance.findById(record._id)
+      .populate('employee', 'name employeeId department designation avatar role status');
+    res.json(updated);
+  } catch (err) {
+    console.error('Update attendance error:', err);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};

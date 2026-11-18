@@ -9,6 +9,7 @@ import {
   LogOut,
   X,
   Clock,
+  User,
 } from "lucide-react";
 
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -35,6 +36,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
     { name: "Attendance",  path: "/attendance",  icon: <Clock size={22} /> },
     { name: "WorkTracker", path: "/worktracker", icon: <Users size={22} /> },
     { name: "Leave",       path: "/leave",       icon: <CalendarDays size={22} /> },
+    { name: "Profile",     path: "/profile",     icon: <User size={22} /> },
   ];
 
   return (

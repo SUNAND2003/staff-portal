@@ -8,10 +8,11 @@ const fmtTime = (iso) => iso ? new Date(iso).toLocaleTimeString("en-IN", { hour:
 const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "--";
 
 const STATUS_STYLE = {
-  Present:  "bg-emerald-100 text-emerald-700",
-  Late:     "bg-amber-100 text-amber-700",
+  Present:    "bg-emerald-100 text-emerald-700",
+  Late:       "bg-amber-100 text-amber-700",
+  "On Break": "bg-yellow-100 text-yellow-700",
   "On Leave": "bg-blue-100 text-blue-700",
-  Absent:   "bg-slate-100 text-gray-500",
+  Absent:     "bg-slate-100 text-gray-500",
 };
 
 const ACTION_STYLE = {
@@ -60,7 +61,9 @@ useEffect(() => {
       
       const mapped = records.map(r => {
         let displayStatus = "Absent";
-        if (r.status === "working" || r.status === "checked_out" || r.status === "on_break") {
+        if (r.status === "on_break") {
+          displayStatus = "On Break";
+        } else if (r.status === "working" || r.status === "checked_out") {
           displayStatus = r.isLate ? "Late" : "Present";
         } else if (r.status === "on_leave") {
           displayStatus = "On Leave";

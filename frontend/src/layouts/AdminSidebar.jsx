@@ -8,6 +8,7 @@ import {
   BarChart3,
   Users,
   CalendarDays,
+  ListTodo,
   X,
   LogOut,
   Settings,
@@ -53,7 +54,7 @@ export default function AdminSidebar({
     {
       name: "Tasks",
       path: "/admin/tasks",
-      icon: <LayoutDashboard size={20} />,
+      icon: <ListTodo size={20} />,
     },
     {
       name: "Staff Management",

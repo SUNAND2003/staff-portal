@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import AdminSidebar from "../layouts/AdminSidebar";
 import useAuthStore from "../store/authStore";
 import { mapAttendanceRecord } from "../utils/adminData";
@@ -13,10 +14,11 @@ const ACTION_STYLE = {
 };
 
 const STATUS_STYLE = {
-  Present:  "bg-emerald-100 text-emerald-700 border border-emerald-200",
-  Late:     "bg-amber-100 text-amber-700 border border-amber-200",
+  Present:    "bg-emerald-100 text-emerald-700 border border-emerald-200",
+  Late:       "bg-amber-100 text-amber-700 border border-amber-200",
+  "On Break": "bg-yellow-100 text-yellow-700 border border-yellow-200",
   "On Leave": "bg-blue-100 text-blue-700 border border-blue-200",
-  Absent:   "bg-slate-100 text-gray-500 border border-gray-200",
+  Absent:     "bg-slate-100 text-gray-500 border border-gray-200",
 };
 
 const fmtTime = (iso) => iso ? new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "--";
@@ -129,6 +131,24 @@ useEffect(() => {
   const id = setInterval(reload, 5000);
   return () => clearInterval(id);
 }, [reload]);
+
+  const handleStatusChange = async (recordId, newStatus) => {
+    if (!recordId) return;
+    setAttendance((prev) =>
+      prev.map((item) =>
+        item._raw?._id === recordId ? { ...item, status: newStatus } : item
+      )
+    );
+    try {
+      await attendanceAPI.updateAttendance(recordId, { status: newStatus });
+      toast.success("Attendance status updated");
+      reload();
+    } catch (err) {
+      console.error("Status update error:", err);
+      toast.error("Failed to update status");
+      reload();
+    }
+  };
 
   const handleExportCSV = async () => {
     setExporting(true);
@@ -397,7 +417,23 @@ useEffect(() => {
                           <td className="px-5 py-4 font-semibold text-gray-700">{r.checkIn}</td>
                           <td className="px-5 py-4 font-semibold text-gray-700">{r.checkOut}</td>
                           <td className="px-5 py-4"><span className="rounded-xl bg-slate-100 px-3 py-1 text-xs font-bold text-gray-700 border border-gray-200">{r.hours}</span></td>
-                          <td className="px-5 py-4"><span className={`rounded-xl px-3 py-1 text-xs font-bold ${STATUS_STYLE[r.status] || STATUS_STYLE.Absent}`}>{r.status}</span></td>
+                          <td className="px-5 py-4">
+                            {r._raw?._id ? (
+                              <select
+                                value={r.status}
+                                onChange={(e) => handleStatusChange(r._raw._id, e.target.value)}
+                                className={`rounded-xl border px-3 py-1.5 text-xs font-bold outline-none cursor-pointer transition-all ${STATUS_STYLE[r.status] || STATUS_STYLE.Absent}`}
+                              >
+                                <option value="Present" className="bg-white text-gray-800">Present</option>
+                                <option value="Late" className="bg-white text-gray-800">Late</option>
+                                <option value="On Break" className="bg-white text-gray-800">On Break</option>
+                                <option value="On Leave" className="bg-white text-gray-800">On Leave</option>
+                                <option value="Absent" className="bg-white text-gray-800">Absent</option>
+                              </select>
+                            ) : (
+                              <span className={`rounded-xl px-3 py-1 text-xs font-bold ${STATUS_STYLE[r.status] || STATUS_STYLE.Absent}`}>{r.status}</span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                       {filtered.length === 0 && (

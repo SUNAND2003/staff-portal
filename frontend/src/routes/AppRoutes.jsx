@@ -7,6 +7,7 @@ import Tasks              from "../pages/Tasks";
 import LeaveManagement    from "../pages/LeaveManagement";
 import WorkTracker        from "../pages/WorkTracker";
 import EmployeeAttendance from "../pages/EmployeeAttendance";
+import Profile            from "../pages/Profile";
 import AdminPanel         from "../pages/AdminPanel";
 import AdminAttendance    from "../pages/AdminAttendance";
 import AdminLeave         from "../pages/AdminLeave";
@@ -29,6 +30,7 @@ export default function AppRoutes() {
       <Route path="/leave"       element={<AuthGuard><LeaveManagement /></AuthGuard>} />
       <Route path="/worktracker" element={<AuthGuard><WorkTracker /></AuthGuard>} />
       <Route path="/attendance"  element={<AuthGuard><EmployeeAttendance /></AuthGuard>} />
+      <Route path="/profile"     element={<AuthGuard><Profile /></AuthGuard>} />
 
       {/* Admin + Manager only */}
       <Route path="/admin"            element={<AuthGuard role="admin"><AdminPanel /></AuthGuard>}/>

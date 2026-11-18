@@ -77,7 +77,8 @@ export default function AdminStaff() {
     try {
       setInitialLoading(true);
       const response = await employeeAPI.getAll();
-      setStaffList(Array.isArray(response) ? response : []);
+      const list = Array.isArray(response) ? response : (response?.employees || response?.data || []);
+      setStaffList(list);
     } catch (error) {
       console.error("Error fetching employees:", error);
       setFormError("Failed to load employees");

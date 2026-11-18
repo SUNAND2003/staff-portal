@@ -213,6 +213,9 @@ export const attendanceAPI = {
     const params = new URLSearchParams(filter).toString();
     return get(`/attendance/report${params ? '?' + params : ''}`);
   },
+
+  // Admin/Manager update
+  updateAttendance: (id, data) => patch(`/attendance/${id}`, data),
 };
 
 // ─── Task API ─────────────────────────────────────────────────────────────────

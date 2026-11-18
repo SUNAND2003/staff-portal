@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import AdminSidebar from "../layouts/AdminSidebar";
 import useAuthStore from "../store/authStore";
 import { getLeaveRequests, updateLeaveRequest, onLeaveUpdate } from "../utils/adminData";
@@ -80,8 +81,10 @@ export default function AdminLeave() {
     try {
       const updatedLeaves = await updateLeaveRequest(id, action);
       setLeaves(updatedLeaves || []);
+      toast.success(`Leave request ${action.toLowerCase()} successfully`);
     } catch (error) {
       console.error("Failed to update leave:", error);
+      toast.error(error.message || "Failed to update leave request");
     }
   };
 

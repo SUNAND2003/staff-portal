@@ -14,10 +14,11 @@ import {
 } from "lucide-react";
 
 const STATUS_STYLE = {
-  Present:  { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-500" },
-  Absent:   { bg: "bg-red-100",     text: "text-red-700",     border: "border-red-200",     dot: "bg-red-500"     },
-  Late:     { bg: "bg-amber-100",   text: "text-amber-700",   border: "border-amber-200",   dot: "bg-amber-500"   },
-  "On Leave":{ bg: "bg-blue-100",  text: "text-blue-700",    border: "border-blue-200",    dot: "bg-blue-500"    },
+  Present:    { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-500" },
+  Absent:     { bg: "bg-red-100",     text: "text-red-700",     border: "border-red-200",     dot: "bg-red-500"     },
+  Late:       { bg: "bg-amber-100",   text: "text-amber-700",   border: "border-amber-200",   dot: "bg-amber-500"   },
+  "On Break": { bg: "bg-yellow-100",  text: "text-yellow-700",  border: "border-yellow-200",  dot: "bg-yellow-500"  },
+  "On Leave": { bg: "bg-blue-100",    text: "text-blue-700",    border: "border-blue-200",    dot: "bg-blue-500"    },
 };
 
 export default function AdminPanel() {
