@@ -350,6 +350,8 @@ export default function AdminTasks() {
   };
 
   const handleStatusChange = async (id, newStatus) => {
+    // Optimistically update status in state so the UI reflects change immediately
+    setTasks((prev) => prev.map((t) => (t._id === id ? { ...t, status: newStatus } : t)));
     try {
       const updated = await taskAPI.updateTask(id, { status: newStatus });
       const saved = updated?.task || updated;
@@ -358,6 +360,7 @@ export default function AdminTasks() {
     } catch (err) {
       console.error("Status update failed:", err);
       toast.error(err.response?.data?.message || err.message || "Failed to update status");
+      loadTasks();
     }
   };
 

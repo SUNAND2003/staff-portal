@@ -15,6 +15,7 @@ router.use(protect);
 router.get('/my', ctrl.getMyTasks);
 
 // GET ALL TASKS
+router.get('/', managerOrAdmin, ctrl.getAllTasks);
 router.get('/all', managerOrAdmin, ctrl.getAllTasks);
 
 // GET SINGLE TASK
@@ -25,6 +26,7 @@ router.post('/', ctrl.createTask);
 
 // UPDATE TASK
 router.patch('/:id', ctrl.updateTask);
+router.put('/:id', ctrl.updateTask);
 
 // DELETE TASK
 router.delete('/:id', managerOrAdmin, ctrl.deleteTask);
