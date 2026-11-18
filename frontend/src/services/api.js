@@ -159,6 +159,9 @@ export const authAPI = {
 
 // ─── Punch API ────────────────────────────────────────────────────────────────
 export const punchAPI = {
+  // Check live network access status for punching
+  getNetworkStatus: () => get('/attendance/network-status'),
+
   // Record a punch event
   recordPunch: (data) => post('/attendance/punch', data),
 

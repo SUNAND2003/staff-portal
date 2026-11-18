@@ -49,7 +49,7 @@ const workingHoursSchema = new mongoose.Schema(
     },
     allowAdminBypass: {
       type: Boolean,
-      default: true,
+      default: false,
     },
   },
   { timestamps: true }

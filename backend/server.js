@@ -33,6 +33,9 @@ const isProduction = process.env.NODE_ENV === 'production' || isRender;
 
 const app = express();
 
+// Trust reverse proxies (Render, Cloudflare, etc.) so req.ip and req.headers['x-forwarded-for'] are accurate
+app.set('trust proxy', true);
+
 // ─── Middleware ───────────────────────────────────────────────────────────────
 // FRONTEND_URL may hold several origins separated by commas, so local dev and
 // the deployed site can both talk to this API. Trailing slashes are stripped
