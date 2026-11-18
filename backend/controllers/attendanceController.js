@@ -14,7 +14,7 @@ const calcWorkSeconds = (checkIn, checkOut, breaks) => {
     if (b.start && b.end) sum += (b.end - b.start) / 1000;
     return sum;
   }, 0);
-  return Math.max(0, total - breakSecs);
+  return Math.floor(Math.max(0, total - breakSecs));
 };
 
 // ─── POST /api/attendance/checkin ─────────────────────────────────────────────

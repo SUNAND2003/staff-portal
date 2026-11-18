@@ -201,11 +201,13 @@ exports.recordPunch = async (req, res) => {
         newAttendance.status = 'checked_out';
         
         // Calculate work hours
-        const workSeconds = (newAttendance.checkOut - newAttendance.checkIn) / 1000;
-        const breakSeconds = (newAttendance.breaks || []).reduce((sum, b) => {
-          if (b.end) return sum + (b.end - b.start) / 1000;
+        const checkOutMs = new Date(newAttendance.checkOut).getTime();
+        const checkInMs = new Date(newAttendance.checkIn).getTime();
+        const workSeconds = Math.max(0, Math.floor((checkOutMs - checkInMs) / 1000));
+        const breakSeconds = Math.floor((newAttendance.breaks || []).reduce((sum, b) => {
+          if (b.end) return sum + (new Date(b.end).getTime() - new Date(b.start).getTime()) / 1000;
           return sum;
-        }, 0);
+        }, 0));
         
         newAttendance.workSeconds = Math.max(0, workSeconds - breakSeconds);
         newAttendance.totalHours = Math.round((newAttendance.workSeconds / 3600) * 100) / 100;
