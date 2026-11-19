@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import useAuthStore from "../store/authStore";
 import { Menu, User } from "lucide-react";
+import { getAvatarUrl } from "../utils/helpers";
 
 export default function DashboardLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -45,13 +46,15 @@ export default function DashboardLayout({ children }) {
             title="View Profile"
             className="flex items-center gap-2 rounded-xl bg-white/5 p-1.5 pr-2.5 hover:bg-white/10 transition-all border border-white/10"
           >
-            {user?.avatarUrl ? (
+            {getAvatarUrl(user?.avatarUrl) ? (
               <img
-                src={user.avatarUrl}
+                src={getAvatarUrl(user.avatarUrl)}
                 alt={user?.name || "User"}
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
                 className="w-8 h-8 rounded-lg object-cover shadow-sm border border-white/20"
               />
-            ) : (
+            ) : null}
+            {!getAvatarUrl(user?.avatarUrl) && (
               <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                 {initials}
               </div>

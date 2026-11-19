@@ -12,6 +12,7 @@ import {
 import useAuthStore from "../store/authStore";
 import AdminSidebar from "../layouts/AdminSidebar";
 import { employeeAPI } from "../services/api";
+import { getAvatarUrl } from "../utils/helpers";
 
 import {
   Users,
@@ -451,13 +452,15 @@ export default function AdminStaff() {
                   <div key={s.employeeId} className="p-4 space-y-3 bg-white">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 min-w-0">
-                        {s.avatarUrl ? (
+                        {getAvatarUrl(s.avatarUrl) ? (
                           <img
-                            src={s.avatarUrl}
+                            src={getAvatarUrl(s.avatarUrl)}
                             alt={s.name}
+                            onError={(e) => { e.currentTarget.style.display = "none"; }}
                             className="h-11 w-11 shrink-0 rounded-2xl object-cover border border-slate-200 shadow-sm"
                           />
-                        ) : (
+                        ) : null}
+                        {!getAvatarUrl(s.avatarUrl) && (
                           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-[#111827] to-[#374151] text-xs font-bold text-white shadow-md">
                             {s.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
                           </div>
@@ -580,13 +583,15 @@ export default function AdminStaff() {
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          {s.avatarUrl ? (
+                          {getAvatarUrl(s.avatarUrl) ? (
                             <img
-                              src={s.avatarUrl}
+                              src={getAvatarUrl(s.avatarUrl)}
                               alt={s.name}
+                              onError={(e) => { e.currentTarget.style.display = "none"; }}
                               className="h-10 w-10 rounded-full object-cover shadow-sm border border-slate-200"
                             />
-                          ) : (
+                          ) : null}
+                          {!getAvatarUrl(s.avatarUrl) && (
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-[#111827] to-[#374151] text-xs font-bold text-white shadow-md">
                               {s.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
                             </div>

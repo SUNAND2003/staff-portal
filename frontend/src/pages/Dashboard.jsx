@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { attendanceAPI, punchAPI } from "../services/api";
 import useAuthStore from "../store/authStore";
+import { getAvatarUrl } from "../utils/helpers";
 import { Clock, Coffee, LogOut, AlertTriangle, CheckCircle2, Loader, Play, Sparkles, Calendar, Wifi, WifiOff, ShieldAlert, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -218,13 +219,15 @@ export default function Dashboard() {
           <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3.5 sm:gap-4">
               <Link to="/profile" className="shrink-0 group" title="View or change profile picture">
-                {user?.avatarUrl ? (
+                {getAvatarUrl(user?.avatarUrl) ? (
                   <img
-                    src={user.avatarUrl}
+                    src={getAvatarUrl(user.avatarUrl)}
                     alt={user?.name || "Avatar"}
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
                     className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl object-cover border-2 border-white/25 shadow-md transition-all group-hover:scale-105 group-hover:border-emerald-400"
                   />
-                ) : (
+                ) : null}
+                {!getAvatarUrl(user?.avatarUrl) && (
                   <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-lg sm:text-xl font-black text-white shadow-md border-2 border-white/20 transition-all group-hover:scale-105">
                     {user?.name ? user.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() : "U"}
                   </div>

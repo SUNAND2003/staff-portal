@@ -21,6 +21,7 @@ import {
 } from "react-router-dom";
 
 import useAuthStore from "../store/authStore";
+import { getAvatarUrl } from "../utils/helpers";
 
 export default function AdminSidebar({
   mobileOpen,
@@ -208,13 +209,15 @@ export default function AdminSidebar({
             className="flex items-center gap-3 rounded-2xl bg-white/5 p-3 hover:bg-white/10 transition-all border border-white/10 text-white group"
             title="View Profile"
           >
-            {user?.avatarUrl ? (
+            {getAvatarUrl(user?.avatarUrl) ? (
               <img
-                src={user.avatarUrl}
+                src={getAvatarUrl(user.avatarUrl)}
                 alt={user?.name || "Admin"}
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
                 className="h-10 w-10 rounded-xl object-cover border border-white/20 shadow-sm"
               />
-            ) : (
+            ) : null}
+            {!getAvatarUrl(user?.avatarUrl) && (
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 to-orange-600 text-xs font-bold text-white shadow-sm">
                 {user?.name ? user.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() : "A"}
               </div>

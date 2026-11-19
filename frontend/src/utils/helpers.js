@@ -50,6 +50,29 @@ export const getAvatarColor = (name, colors) => {
   return colors[idx];
 };
 
+export const getAvatarUrl = (avatarUrl) => {
+  if (!avatarUrl || typeof avatarUrl !== 'string') return '';
+  const trimmed = avatarUrl.trim();
+  if (!trimmed) return '';
+  if (
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://')
+  ) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/')) {
+    const rawApiUrl =
+      (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
+      'https://hexa-staff-portal-backend.onrender.com/api';
+    const backendOrigin = rawApiUrl.replace(/\/api\/?$/, '');
+    const cleanPath = trimmed.startsWith('/') ? trimmed : '/' + trimmed;
+    return `${backendOrigin}${cleanPath}`;
+  }
+  return trimmed;
+};
+
 export const calculatePercentage = (value, total) => {
   if (!total) return 0;
   return Math.round((value / total) * 100);

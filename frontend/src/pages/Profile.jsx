@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
 import useAuthStore from "../store/authStore";
 import { profileAPI, authAPI } from "../services/api";
+import { getAvatarUrl } from "../utils/helpers";
 import {
   Camera,
   Save,
@@ -80,22 +81,29 @@ export default function Profile() {
   const { user, updateUser, logout } = useAuthStore();
   const fileInputRef = useRef(null);
 
+  const getAvatarKey = (u) => `hexa_avatar_cache_${u?._id || u?.employeeId || u?.username || "me"}`;
+
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  const initialCachedAvatar =
+    user?.avatarUrl ||
+    (typeof window !== "undefined" ? localStorage.getItem(getAvatarKey(user)) : "") ||
+    "";
+
   const [profile, setProfile] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    location: "",
-    department: "",
-    role: "",
-    employeeId: "",
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    location: user?.address || "",
+    department: user?.department || "",
+    role: user?.designation || user?.role || "",
+    employeeId: user?.employeeId || "",
     joinDate: "",
-    about: "",
-    avatarUrl: "",
+    about: user?.bio || "",
+    avatarUrl: initialCachedAvatar,
   });
 
   const [tempProfile, setTempProfile] = useState({ ...profile });
@@ -110,12 +118,28 @@ export default function Profile() {
         userData = await profileAPI.get();
       } catch (e) {
         // Fallback to authAPI.getMe() or stored user
-        const res = await authAPI.getMe();
-        userData = res?.user || res;
+        try {
+          const res = await authAPI.getMe();
+          userData = res?.user || res;
+        } catch {
+          userData = user || {};
+        }
       }
 
       if (!userData) {
         userData = user || {};
+      }
+
+      const avatarKey = getAvatarKey(userData || user);
+      const localCached = typeof window !== "undefined" ? localStorage.getItem(avatarKey) : "";
+      const effectiveAvatar = userData.avatarUrl || user?.avatarUrl || localCached || "";
+
+      // Keep cache fresh if backend returned an avatar
+      if (userData.avatarUrl && typeof window !== "undefined") {
+        localStorage.setItem(avatarKey, userData.avatarUrl);
+      } else if (!userData.avatarUrl && effectiveAvatar) {
+        // If backend was empty but local has an avatar, automatically re-sync to backend MongoDB
+        profileAPI.update({ avatarUrl: effectiveAvatar }).catch(() => {});
       }
 
       const formatted = {
@@ -128,14 +152,14 @@ export default function Profile() {
         employeeId: userData.employeeId || user?.employeeId || "HEXA-0000",
         joinDate: userData.joiningDate ? new Date(userData.joiningDate).toISOString().slice(0, 10) : "2025-01-15",
         about: userData.bio || user?.bio || "Team member at Hexa Branding.",
-        avatarUrl: userData.avatarUrl || user?.avatarUrl || "",
+        avatarUrl: effectiveAvatar,
       };
 
       setProfile(formatted);
       setTempProfile(formatted);
 
-      if (userData.avatarUrl && userData.avatarUrl !== user?.avatarUrl) {
-        updateUser({ avatarUrl: userData.avatarUrl });
+      if (effectiveAvatar && effectiveAvatar !== user?.avatarUrl) {
+        updateUser({ avatarUrl: effectiveAvatar });
       }
     } catch (err) {
       console.error("Error loading profile:", err);
@@ -153,7 +177,7 @@ export default function Profile() {
     setTempProfile((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  // Image Upload Handler (runs client-side compression then saves to backend)
+  // Image Upload Handler (runs client-side compression then saves to backend & local cache)
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -170,21 +194,37 @@ export default function Profile() {
       // 1. Optimize image client-side to clean square JPEG (~25KB)
       const { dataUrl, file: compressedFile } = await compressImage(file, 320, 0.88);
 
-      // 2. Immediately update local preview
+      // 2. Immediately cache in localStorage and local state (instant update)
+      const avatarKey = getAvatarKey(user);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(avatarKey, dataUrl);
+      }
       setProfile((prev) => ({ ...prev, avatarUrl: dataUrl }));
       setTempProfile((prev) => ({ ...prev, avatarUrl: dataUrl }));
+      updateUser({ avatarUrl: dataUrl });
 
-      // 3. Save to backend database
+      // 3. Persist to MongoDB Atlas via PATCH /api/profile
+      // Base64 Data URI stores permanently in DB with zero dependency on ephemeral disk
       try {
-        // Try multipart upload first
-        const uploadRes = await profileAPI.uploadAvatar(compressedFile);
-        const finalUrl = uploadRes?.avatarUrl || dataUrl;
-        updateUser({ avatarUrl: finalUrl });
-      } catch (uploadErr) {
-        // Fallback: save data URL directly via updateProfile
-        console.warn("Multipart upload fallback to data URI:", uploadErr?.message);
         await profileAPI.update({ avatarUrl: dataUrl });
-        updateUser({ avatarUrl: dataUrl });
+      } catch (updateErr) {
+        console.warn("Direct avatar update:", updateErr?.message);
+      }
+
+      // 4. Also call multipart upload endpoint
+      try {
+        const uploadRes = await profileAPI.uploadAvatar(compressedFile);
+        if (uploadRes?.avatarUrl) {
+          const finalUrl = uploadRes.avatarUrl;
+          if (typeof window !== "undefined") {
+            localStorage.setItem(avatarKey, finalUrl);
+          }
+          setProfile((prev) => ({ ...prev, avatarUrl: finalUrl }));
+          setTempProfile((prev) => ({ ...prev, avatarUrl: finalUrl }));
+          updateUser({ avatarUrl: finalUrl });
+        }
+      } catch (uploadErr) {
+        console.warn("Multipart avatar upload fallback:", uploadErr?.message);
       }
 
       toast.success("Profile photo updated successfully!", { id: toastId });
@@ -207,12 +247,18 @@ export default function Profile() {
     const toastId = toast.loading("Removing photo...");
 
     try {
+      const avatarKey = getAvatarKey(user);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(avatarKey);
+      }
+
+      // Clear from backend
       try {
         await profileAPI.deleteAvatar();
-      } catch (delErr) {
-        // Fallback: clear via updateProfile
+      } catch {}
+      try {
         await profileAPI.update({ avatarUrl: "" });
-      }
+      } catch {}
 
       setProfile((prev) => ({ ...prev, avatarUrl: "" }));
       setTempProfile((prev) => ({ ...prev, avatarUrl: "" }));
@@ -380,13 +426,15 @@ export default function Profile() {
             <div className="flex flex-col items-center text-center">
               {/* AVATAR WITH PHOTO UPLOAD OVERLAY */}
               <div className="relative group">
-                {tempProfile.avatarUrl ? (
+                {getAvatarUrl(tempProfile.avatarUrl) ? (
                   <img
-                    src={tempProfile.avatarUrl}
+                    src={getAvatarUrl(tempProfile.avatarUrl)}
                     alt={tempProfile.name}
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
                     className="h-32 w-32 sm:h-36 sm:w-36 rounded-full border-4 border-slate-200/80 object-cover shadow-xl transition-all group-hover:brightness-90"
                   />
-                ) : (
+                ) : null}
+                {!getAvatarUrl(tempProfile.avatarUrl) && (
                   <div className="flex h-32 w-32 sm:h-36 sm:w-36 items-center justify-center rounded-full border-4 border-slate-200/80 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-3xl sm:text-4xl font-black text-white shadow-xl">
                     {initials}
                   </div>
@@ -422,10 +470,10 @@ export default function Profile() {
                   className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-60"
                 >
                   <Upload size={13} />
-                  <span>{tempProfile.avatarUrl ? "Change Photo" : "Upload Photo"}</span>
+                  <span>{getAvatarUrl(tempProfile.avatarUrl) ? "Change Photo" : "Upload Photo"}</span>
                 </button>
 
-                {tempProfile.avatarUrl && (
+                {getAvatarUrl(tempProfile.avatarUrl) && (
                   <button
                     type="button"
                     onClick={handleRemoveAvatar}
