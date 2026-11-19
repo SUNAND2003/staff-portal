@@ -20,6 +20,9 @@ const calcWorkSeconds = (checkIn, checkOut, breaks) => {
 // ─── POST /api/attendance/checkin ─────────────────────────────────────────────
 exports.checkIn = async (req, res) => {
   try {
+    if (req.user && req.user.role === 'admin') {
+      return res.status(403).json({ message: 'Attendance punch is only enabled for employees. Admins do not punch.' });
+    }
     const today = todayStr();
     let record = await getTodayRecord(req.user._id);
 
@@ -57,6 +60,9 @@ exports.checkIn = async (req, res) => {
 // ─── POST /api/attendance/checkout ────────────────────────────────────────────
 exports.checkOut = async (req, res) => {
   try {
+    if (req.user && req.user.role === 'admin') {
+      return res.status(403).json({ message: 'Attendance punch is only enabled for employees. Admins do not punch.' });
+    }
     const record = await getTodayRecord(req.user._id);
 
     if (!record || !record.checkIn) {
@@ -92,6 +98,9 @@ exports.checkOut = async (req, res) => {
 // ─── POST /api/attendance/break/start ─────────────────────────────────────────
 exports.breakStart = async (req, res) => {
   try {
+    if (req.user && req.user.role === 'admin') {
+      return res.status(403).json({ message: 'Attendance punch is only enabled for employees. Admins do not punch.' });
+    }
     const record = await getTodayRecord(req.user._id);
 
     if (!record || !record.checkIn || record.checkOut) {
@@ -115,6 +124,9 @@ exports.breakStart = async (req, res) => {
 // ─── POST /api/attendance/break/end ───────────────────────────────────────────
 exports.breakEnd = async (req, res) => {
   try {
+    if (req.user && req.user.role === 'admin') {
+      return res.status(403).json({ message: 'Attendance punch is only enabled for employees. Admins do not punch.' });
+    }
     const record = await getTodayRecord(req.user._id);
 
     if (!record || record.status !== 'on_break') {

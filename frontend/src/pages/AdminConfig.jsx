@@ -449,24 +449,6 @@ export default function AdminConfig() {
                     <p className="mt-1.5 text-xs text-gray-500">Local Wi-Fi gateway subnet (e.g. 192.168.29.)</p>
                   </div>
                 </div>
-
-                {/* ADMIN BYPASS TOGGLE */}
-                <div className="mt-4 pt-3 flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200/80 px-4 py-3">
-                  <div className="pr-4">
-                    <p className="text-xs font-bold text-slate-800">Admin Bypass</p>
-                    <p className="text-[11px] text-slate-500">Allow Admin role to punch from any network without blocking</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      name="allowAdminBypass"
-                      checked={formData.allowAdminBypass}
-                      onChange={handleChange}
-                      className="sr-only peer"
-                    />
-                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                </div>
               </div>
 
               {/* NOTES */}

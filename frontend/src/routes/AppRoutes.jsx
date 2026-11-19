@@ -23,13 +23,13 @@ export default function AppRoutes() {
       {/* Public */}
       <Route path="/login" element={<Login />} />
 
-      {/* Employee + Manager + Admin — all authenticated users */}
-      <Route path="/dashboard"   element={<AuthGuard><Dashboard /></AuthGuard>} />
-      <Route path="/reports"     element={<AuthGuard><Reports /></AuthGuard>} />
-      <Route path="/tasks"       element={<AuthGuard><Tasks /></AuthGuard>} />
-      <Route path="/leave"       element={<AuthGuard><LeaveManagement /></AuthGuard>} />
-      <Route path="/worktracker" element={<AuthGuard><WorkTracker /></AuthGuard>} />
-      <Route path="/attendance"  element={<AuthGuard><EmployeeAttendance /></AuthGuard>} />
+      {/* Employee routes (Admins automatically redirected to admin equivalent) */}
+      <Route path="/dashboard"   element={<AuthGuard adminRedirect="/admin"><Dashboard /></AuthGuard>} />
+      <Route path="/attendance"  element={<AuthGuard adminRedirect="/admin/attendance"><EmployeeAttendance /></AuthGuard>} />
+      <Route path="/tasks"       element={<AuthGuard adminRedirect="/admin/tasks"><Tasks /></AuthGuard>} />
+      <Route path="/leave"       element={<AuthGuard adminRedirect="/admin/leave"><LeaveManagement /></AuthGuard>} />
+      <Route path="/worktracker" element={<AuthGuard adminRedirect="/admin/worktrack"><WorkTracker /></AuthGuard>} />
+      <Route path="/reports"     element={<AuthGuard adminRedirect="/admin"><Reports /></AuthGuard>} />
       <Route path="/profile"     element={<AuthGuard><Profile /></AuthGuard>} />
 
       {/* Admin + Manager only */}

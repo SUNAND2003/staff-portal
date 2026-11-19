@@ -36,6 +36,14 @@ exports.getNetworkStatus = async (req, res) => {
 // Save punch event to database
 exports.recordPunch = async (req, res) => {
   try {
+    // Attendance punches are strictly for employees — admins do not punch
+    if (req.user && req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Attendance punch is only enabled for employees. Admins do not record attendance punches.',
+      });
+    }
+
     const { action, status } = req.body;
 
     if (!action || !status) {

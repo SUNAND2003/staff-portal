@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { attendanceAPI, punchAPI } from "../services/api";
 import useAuthStore from "../store/authStore";
@@ -21,7 +21,16 @@ const formatTimeHM = (date) => {
 };
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
+
+  // Admins do not punch attendance — redirect to /admin
+  useEffect(() => {
+    if (user?.role === "admin") {
+      navigate("/admin", { replace: true });
+    }
+  }, [user, navigate]);
+
   const [loading, setLoading] = useState(true);
   const [punching, setPunching] = useState(false);
   const [attendance, setAttendance] = useState(null);
@@ -382,6 +391,7 @@ export default function Dashboard() {
         </div>
 
         {/* ACTION CONTROLS */}
+        {user?.role !== "admin" ? (
         <div style={{ background: "#ffffff", borderRadius: 16, padding: "20px 24px", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
             <h3 style={{ fontSize: 16, fontWeight: 600, color: "#0f172a", margin: 0 }}>Actions</h3>
@@ -542,6 +552,17 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+        ) : (
+          <div className="rounded-2xl border border-blue-200 bg-blue-50/80 p-5 text-blue-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+            <div>
+              <p className="font-bold text-sm">Administrator Account</p>
+              <p className="text-xs text-blue-700 mt-0.5">Attendance punch controls are enabled for employees only. Admins monitor and review employee punches in the Admin Panel.</p>
+            </div>
+            <Link to="/admin" className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 transition-all shrink-0">
+              Go to Admin Panel →
+            </Link>
+          </div>
+        )}
 
         {/* TODAY'S PUNCH TIMELINE */}
         <div className="rounded-[28px] sm:rounded-[32px] border border-slate-200/80 bg-white p-5 sm:p-7 shadow-sm">
