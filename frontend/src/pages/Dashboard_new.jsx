@@ -6,9 +6,10 @@ import { Clock, Coffee, LogOut, AlertTriangle, CheckCircle2, Loader } from "luci
 import toast from "react-hot-toast";
 
 const formatTime = (seconds) => {
-  const h = String(Math.floor(seconds / 3600)).padStart(2, "0");
-  const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
-  const s = String(seconds % 60).padStart(2, "0");
+  const total = Math.floor(Math.max(0, Number(seconds) || 0));
+  const h = String(Math.floor(total / 3600)).padStart(2, "0");
+  const m = String(Math.floor((total % 3600) / 60)).padStart(2, "0");
+  const s = String(total % 60).padStart(2, "0");
   return `${h}:${m}:${s}`;
 };
 

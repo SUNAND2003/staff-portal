@@ -16,13 +16,10 @@ export default function LiveTimer() {
 
   }, []);
 
-  const hours = String(Math.floor(time / 3600)).padStart(2, "0");
-
-  const minutes = String(
-    Math.floor((time % 3600) / 60)
-  ).padStart(2, "0");
-
-  const seconds = String(time % 60).padStart(2, "0");
+  const total = Math.floor(Math.max(0, Number(time) || 0));
+  const hours = String(Math.floor(total / 3600)).padStart(2, "0");
+  const minutes = String(Math.floor((total % 3600) / 60)).padStart(2, "0");
+  const seconds = String(total % 60).padStart(2, "0");
 
   return (
 

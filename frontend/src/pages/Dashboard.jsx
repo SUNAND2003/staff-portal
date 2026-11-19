@@ -128,14 +128,28 @@ export default function Dashboard() {
 
   const handlePunch = async (action, status) => {
     // ─── Immediate Pre-flight Network Check ────────────────────────────────
-    if (networkStatus && networkStatus.networkRestrictionEnabled && !networkStatus.isAllowed) {
+    let currentNetStatus = networkStatus;
+    // If cached status was not allowed or missing, fetch latest to avoid blocking if user just connected to HEXA_5G
+    if (!currentNetStatus || !currentNetStatus.isAllowed) {
+      try {
+        const freshNet = await punchAPI.getNetworkStatus();
+        if (freshNet && freshNet.success !== false) {
+          currentNetStatus = freshNet;
+          setNetworkStatus(freshNet);
+        }
+      } catch (netErr) {
+        // If network status check fails, proceed and let backend middleware verify
+      }
+    }
+
+    if (currentNetStatus && currentNetStatus.networkRestrictionEnabled && !currentNetStatus.isAllowed) {
       setNetworkError({
         title: "Unauthorized Network Detected",
-        message: `Unauthorized Network: Attendance punch is restricted to the company office network (${networkStatus.allowedWifiSsid || "HEXA_5G"}). Please connect to ${networkStatus.allowedWifiSsid || "HEXA_5G"} Wi-Fi to punch.`,
-        clientIp: networkStatus.clientIp || "",
-        ssid: networkStatus.allowedWifiSsid || "HEXA_5G",
+        message: `Unauthorized Network: Attendance punch is restricted to the company office network (${currentNetStatus.allowedWifiSsid || "HEXA_5G"}). Please connect to ${currentNetStatus.allowedWifiSsid || "HEXA_5G"} Wi-Fi to punch.`,
+        clientIp: currentNetStatus.clientIp || "",
+        ssid: currentNetStatus.allowedWifiSsid || "HEXA_5G",
       });
-      toast.error(`Punch blocked: connect to ${networkStatus.allowedWifiSsid || "HEXA_5G"} Wi-Fi to punch.`);
+      toast.error(`Punch blocked: connect to ${currentNetStatus.allowedWifiSsid || "HEXA_5G"} Wi-Fi to punch.`);
       return;
     }
 
@@ -157,10 +171,10 @@ export default function Dashboard() {
         loadAttendanceData(); // revert optimistic state
       }
     } catch (err) {
-      const errMsg = err?.message || "Error recording punch";
+      const errMsg = err?.data?.message || err?.message || "Error recording punch";
       const isNetworkRestricted =
         err?.code === "UNAUTHORIZED_NETWORK" ||
-        err?.status === 403 ||
+        err?.data?.code === "UNAUTHORIZED_NETWORK" ||
         errMsg.toLowerCase().includes("unauthorized network") ||
         errMsg.toLowerCase().includes("restricted to the company") ||
         errMsg.toLowerCase().includes("hexa_5g");

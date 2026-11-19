@@ -2,19 +2,13 @@ const Punch = require('../models/Punch');
 const Attendance = require('../models/Attendance');
 const WorkingHours = require('../models/WorkingHours');
 const { todayStr } = require('../utils/dateHelpers');
-const { getClientIp, isIpAllowed } = require('../middleware/verifyCompanyNetwork');
+const { getClientIp, isIpAllowed, getEffectiveNetworkConfig } = require('../middleware/verifyCompanyNetwork');
 
 // ─── GET /api/attendance/network-status ─────────────────────────────────────────
 exports.getNetworkStatus = async (req, res) => {
   try {
-    const config = (await WorkingHours.findOne().lean()) || {};
-    const effectiveConfig = {
-      networkRestrictionEnabled: config.networkRestrictionEnabled !== false,
-      allowedWifiSsid: config.allowedWifiSsid || 'HEXA_5G',
-      allowedIpv6Prefixes: config.allowedIpv6Prefixes || ['2405:201:f006:b86f'],
-      allowedIpv4Addresses: config.allowedIpv4Addresses || ['49.47.199.103', '192.168.29.'],
-      allowedSubnets: config.allowedSubnets || ['192.168.29.'],
-    };
+    const config = await WorkingHours.findOne().lean();
+    const effectiveConfig = getEffectiveNetworkConfig(config);
 
     const clientIp = getClientIp(req);
     const isAllowed = !effectiveConfig.networkRestrictionEnabled || isIpAllowed(clientIp, effectiveConfig);
@@ -63,13 +57,7 @@ exports.recordPunch = async (req, res) => {
       console.warn('Could not read WorkingHours for network restriction:', confErr.message);
     }
 
-    const effectiveConfig = config || {
-      networkRestrictionEnabled: true,
-      allowedWifiSsid: 'HEXA_5G',
-      allowedIpv6Prefixes: ['2405:201:f006:b86f'],
-      allowedIpv4Addresses: ['49.47.199.103', '192.168.29.'],
-      allowedSubnets: ['192.168.29.'],
-    };
+    const effectiveConfig = getEffectiveNetworkConfig(config);
 
     if (effectiveConfig.networkRestrictionEnabled !== false) {
       const allowed = isIpAllowed(clientIp, effectiveConfig);

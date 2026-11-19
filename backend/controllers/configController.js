@@ -1,4 +1,5 @@
 const WorkingHours = require('../models/WorkingHours');
+const { getClientIp } = require('../middleware/verifyCompanyNetwork');
 
 // Get working hours configuration
 exports.getWorkingHours = async (req, res) => {
@@ -22,12 +23,7 @@ exports.getWorkingHours = async (req, res) => {
       await config.save();
     }
 
-    const clientIp = (
-      req.headers['x-forwarded-for'] ||
-      req.headers['x-real-ip'] ||
-      req.socket.remoteAddress ||
-      ''
-    ).split(',')[0].trim();
+    const clientIp = getClientIp(req);
     
     res.json({
       ...config.toObject(),

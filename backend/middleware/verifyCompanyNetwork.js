@@ -1,5 +1,38 @@
 const WorkingHours = require('../models/WorkingHours');
 
+const DEFAULT_COMPANY_NETWORK = {
+  networkRestrictionEnabled: true,
+  allowedWifiSsid: 'HEXA_5G',
+  allowedIpv6Prefixes: ['2405:201:f006:b86f'],
+  allowedIpv4Addresses: ['49.47.199.103', '192.168.29.'],
+  allowedSubnets: ['192.168.29.'],
+};
+
+/**
+ * Normalizes and falls back company network configuration
+ */
+function getEffectiveNetworkConfig(config) {
+  if (!config) return { ...DEFAULT_COMPANY_NETWORK };
+
+  const cleanList = (val, defaultList) => {
+    if (!val) return defaultList;
+    const arr = Array.isArray(val) ? val : String(val).split(',');
+    const filtered = arr.map((s) => String(s).trim()).filter(Boolean);
+    return filtered.length > 0 ? filtered : defaultList;
+  };
+
+  return {
+    networkRestrictionEnabled:
+      config.networkRestrictionEnabled !== undefined
+        ? Boolean(config.networkRestrictionEnabled)
+        : DEFAULT_COMPANY_NETWORK.networkRestrictionEnabled,
+    allowedWifiSsid: config.allowedWifiSsid || DEFAULT_COMPANY_NETWORK.allowedWifiSsid,
+    allowedIpv6Prefixes: cleanList(config.allowedIpv6Prefixes, DEFAULT_COMPANY_NETWORK.allowedIpv6Prefixes),
+    allowedIpv4Addresses: cleanList(config.allowedIpv4Addresses, DEFAULT_COMPANY_NETWORK.allowedIpv4Addresses),
+    allowedSubnets: cleanList(config.allowedSubnets, DEFAULT_COMPANY_NETWORK.allowedSubnets),
+  };
+}
+
 /**
  * Helper to extract client IP reliably behind proxies (Render, Cloudflare, etc.)
  */
@@ -43,7 +76,7 @@ function getClientIp(req) {
 /**
  * Checks if the given IP matches allowed company network configurations
  */
-function isIpAllowed(clientIp, config) {
+function isIpAllowed(clientIp, rawConfig) {
   if (!clientIp) return false;
 
   // Localhost development fallback (only outside production)
@@ -56,7 +89,8 @@ function isIpAllowed(clientIp, config) {
     return true;
   }
 
-  const clientLower = clientIp.toLowerCase();
+  const config = getEffectiveNetworkConfig(rawConfig);
+  const clientLower = clientIp.toLowerCase().trim();
 
   // 1. IPv6 Prefix check (e.g. 2405:201:f006:b86f)
   const allowedV6 = (config.allowedIpv6Prefixes || []).map((p) => p.trim().toLowerCase()).filter(Boolean);
@@ -65,12 +99,12 @@ function isIpAllowed(clientIp, config) {
 
   // 2. IPv4 Address or Subnet check (e.g. 49.47.199.103, 192.168.29.)
   const allowedV4 = (config.allowedIpv4Addresses || []).map((p) => p.trim()).filter(Boolean);
-  const matchV4 = allowedV4.some((ip) => clientIp === ip || clientIp.startsWith(ip));
+  const matchV4 = allowedV4.some((ip) => clientLower === ip.toLowerCase() || clientLower.startsWith(ip.toLowerCase()));
   if (matchV4) return true;
 
   // 3. Local Subnet check (e.g. 192.168.29.)
   const allowedSubnets = (config.allowedSubnets || []).map((p) => p.trim()).filter(Boolean);
-  const matchSubnet = allowedSubnets.some((subnet) => clientIp.startsWith(subnet));
+  const matchSubnet = allowedSubnets.some((subnet) => clientLower.startsWith(subnet.toLowerCase()));
   if (matchSubnet) return true;
 
   return false;
@@ -88,14 +122,7 @@ const verifyCompanyNetwork = async (req, res, next) => {
       console.warn('Could not read WorkingHours for network restriction:', dbErr.message);
     }
 
-    // Default configuration if not set yet
-    const effectiveConfig = config || {
-      networkRestrictionEnabled: true,
-      allowedWifiSsid: 'HEXA_5G',
-      allowedIpv6Prefixes: ['2405:201:f006:b86f'],
-      allowedIpv4Addresses: ['49.47.199.103', '192.168.29.'],
-      allowedSubnets: ['192.168.29.'],
-    };
+    const effectiveConfig = getEffectiveNetworkConfig(config);
 
     // If restriction is explicitly disabled in admin settings, allow
     if (effectiveConfig.networkRestrictionEnabled === false) {
@@ -137,4 +164,6 @@ module.exports = {
   verifyCompanyNetwork,
   getClientIp,
   isIpAllowed,
+  getEffectiveNetworkConfig,
+  DEFAULT_COMPANY_NETWORK,
 };
