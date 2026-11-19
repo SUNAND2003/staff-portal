@@ -3,10 +3,11 @@
 // FIX 2: filter buttons missing key prop (React warning)
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import AdminSidebar from "../layouts/AdminSidebar";
 import useAuthStore from "../store/authStore";
+import { getAvatarUrl } from "../utils/helpers";
 import { getLeaveRequests, updateLeaveRequest, onLeaveUpdate } from "../utils/adminData";
 import { CalendarDays, CheckCircle2, XCircle, Clock3, FileText, Menu, RefreshCw } from "lucide-react";
 
@@ -122,9 +123,21 @@ export default function AdminLeave() {
                 <p className="text-sm font-bold text-white">{user?.name}</p>
                 <p className="text-xs text-white/50">Administrator</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-bold text-[#111827] shadow-lg">
-                {user?.name?.[0] || "A"}
-              </div>
+              <Link to="/profile" title="View Profile" className="shrink-0">
+                {getAvatarUrl(user?.avatarUrl) ? (
+                  <img
+                    src={getAvatarUrl(user.avatarUrl)}
+                    alt={user?.name || "Admin"}
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    className="h-10 w-10 rounded-full object-cover border border-white/20 shadow-lg"
+                  />
+                ) : null}
+                {!getAvatarUrl(user?.avatarUrl) && (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-bold text-[#111827] shadow-lg">
+                    {user?.name?.[0] || "A"}
+                  </div>
+                )}
+              </Link>
               <button
                 onClick={reload}
                 className="rounded-xl border border-white/10 bg-white/10 p-3 text-white transition-all duration-300 hover:bg-white/20"

@@ -2,10 +2,11 @@
 // FIX: onClick={reload} → onClick={loadTasks} (reload was never defined)
 
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import AdminSidebar from "../layouts/AdminSidebar";
 import useAuthStore from "../store/authStore";
 import { workLogAPI, employeeAPI } from "../services/api";
+import { getAvatarUrl } from "../utils/helpers";
 import { Briefcase, Clock3, CheckCircle2, PlayCircle, PauseCircle, Menu, RefreshCw, Timer, Trash2, User, Users } from "lucide-react";
 
 const formatTime = (seconds = 0) => {
@@ -237,9 +238,21 @@ export default function AdminWorkTrack() {
                 <p className="text-sm font-bold text-white">{user?.name}</p>
                 <p className="text-xs text-white/50">Administrator</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-bold text-[#111827] shadow-lg">
-                {user?.name?.[0] || "A"}
-              </div>
+              <Link to="/profile" title="View Profile" className="shrink-0">
+                {getAvatarUrl(user?.avatarUrl) ? (
+                  <img
+                    src={getAvatarUrl(user.avatarUrl)}
+                    alt={user?.name || "Admin"}
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    className="h-10 w-10 rounded-full object-cover border border-white/20 shadow-lg"
+                  />
+                ) : null}
+                {!getAvatarUrl(user?.avatarUrl) && (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-bold text-[#111827] shadow-lg">
+                    {user?.name?.[0] || "A"}
+                  </div>
+                )}
+              </Link>
               {/* FIX: was onClick={reload} — function is named loadTasks */}
               <button
                 onClick={loadTasks}

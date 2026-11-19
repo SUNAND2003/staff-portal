@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import AdminSidebar from "../layouts/AdminSidebar";
 import useAuthStore from "../store/authStore";
+import { getAvatarUrl } from "../utils/helpers";
 import { mapAttendanceRecord } from "../utils/adminData";
 import { Radio, Search, RefreshCw, Menu, Download, Calendar, User, X, Clock } from "lucide-react";
 import { attendanceAPI, punchAPI, employeeAPI } from "../services/api";
@@ -366,9 +367,21 @@ useEffect(() => {
                   <p className="text-sm font-bold text-white">{user?.name}</p>
                   <p className="text-xs text-white/50">Administrator</p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-bold text-[#111827] shadow-lg">
-                  {user?.name?.[0] || "A"}
-                </div>
+                <Link to="/profile" title="View Profile" className="shrink-0">
+                  {getAvatarUrl(user?.avatarUrl) ? (
+                    <img
+                      src={getAvatarUrl(user.avatarUrl)}
+                      alt={user?.name || "Admin"}
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      className="h-10 w-10 rounded-full object-cover border border-white/20 shadow-lg"
+                    />
+                  ) : null}
+                  {!getAvatarUrl(user?.avatarUrl) && (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-bold text-[#111827] shadow-lg">
+                      {user?.name?.[0] || "A"}
+                    </div>
+                  )}
+                </Link>
                 <button onClick={reload} className="rounded-xl border border-white/10 bg-white/10 p-3 text-white transition-all hover:bg-white/20">
                   <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
                 </button>

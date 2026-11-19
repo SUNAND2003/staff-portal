@@ -7,6 +7,7 @@ import {
 
 import {
   useNavigate,
+  Link,
 } from "react-router-dom";
 
 import useAuthStore from "../store/authStore";
@@ -248,9 +249,21 @@ export default function AdminStaff() {
                 <p className="text-xs text-white/50">Administrator</p>
               </div>
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-bold text-[#111827] shadow-lg">
-                {user?.name?.[0] || "A"}
-              </div>
+              <Link to="/profile" title="View Profile" className="shrink-0">
+                {getAvatarUrl(user?.avatarUrl) ? (
+                  <img
+                    src={getAvatarUrl(user.avatarUrl)}
+                    alt={user?.name || "Admin"}
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    className="h-10 w-10 rounded-full object-cover border border-white/20 shadow-lg"
+                  />
+                ) : null}
+                {!getAvatarUrl(user?.avatarUrl) && (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-bold text-[#111827] shadow-lg">
+                    {user?.name?.[0] || "A"}
+                  </div>
+                )}
+              </Link>
 
               <button
                 onClick={handleLogout}

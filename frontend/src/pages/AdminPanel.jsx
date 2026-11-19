@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import AdminSidebar from "../layouts/AdminSidebar";
 import useAuthStore from "../store/authStore";
 import { punchAPI } from "../services/api";
+import { getAvatarUrl } from "../utils/helpers";
 import {
   getAttendanceReport, getLeaveRequests,
   approveLeaveRequest, rejectLeaveRequest,
@@ -174,10 +175,24 @@ export default function AdminPanel() {
               <button onClick={refresh} className="rounded-xl bg-white/10 p-2 text-white transition-all hover:bg-white/20" title="Refresh">
                 <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
               </button>
-              <div className="hidden text-right sm:block">
-                <p className="text-sm font-bold text-white">{user?.name}</p>
-                <p className="text-xs text-white/60">Administrator</p>
-              </div>
+              <Link to="/profile" title="View Profile" className="flex items-center gap-3">
+                <div className="hidden text-right sm:block">
+                  <p className="text-sm font-bold text-white">{user?.name}</p>
+                  <p className="text-xs text-white/60">Administrator</p>
+                </div>
+                {getAvatarUrl(user?.avatarUrl) ? (
+                  <img
+                    src={getAvatarUrl(user.avatarUrl)}
+                    alt={user?.name || "Admin"}
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    className="h-10 w-10 rounded-full object-cover border border-white/20 shadow-lg"
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-bold text-[#111827] shadow-lg">
+                    {user?.name?.[0] || "A"}
+                  </div>
+                )}
+              </Link>
               <button onClick={handleLogout} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
                 <LogOut size={15} />
                 <span className="hidden sm:inline">Logout</span>
