@@ -68,7 +68,7 @@ exports.recordPunch = async (req, res) => {
         return res.status(403).json({
           success: false,
           code: 'UNAUTHORIZED_NETWORK',
-          message: `Unauthorized Network: Attendance punch is restricted to the company office network (${wifiSsid}). Please connect to ${wifiSsid} Wi-Fi to punch.`,
+          message: `Different Network Detected: Attendance punch is restricted to the company office network (${wifiSsid}). Please connect to ${wifiSsid} Wi-Fi to punch.`,
           clientIp,
           allowedWifiSsid: wifiSsid,
         });

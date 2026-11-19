@@ -1,10 +1,11 @@
+const os = require('os');
 const WorkingHours = require('../models/WorkingHours');
 
 const DEFAULT_COMPANY_NETWORK = {
   networkRestrictionEnabled: true,
   allowedWifiSsid: 'HEXA_5G',
   allowedIpv6Prefixes: ['2405:201:f006:b86f'],
-  allowedIpv4Addresses: ['49.47.199.103', '192.168.29.'],
+  allowedIpv4Addresses: ['49.47.199.103', '49.47.', '192.168.29.'],
   allowedSubnets: ['192.168.29.'],
 };
 
@@ -70,24 +71,28 @@ function getClientIp(req) {
     ip = ip.split(':')[0];
   }
 
-  return ip.trim();
+  ip = ip.trim();
+
+  // If localhost, extract actual active machine network IP
+  if (ip === '127.0.0.1' || ip === '::1' || ip === 'localhost') {
+    const ifaces = os.networkInterfaces();
+    for (const name of Object.keys(ifaces)) {
+      for (const net of ifaces[name] || []) {
+        if (!net.internal && net.address && net.family === 'IPv4') {
+          return net.address;
+        }
+      }
+    }
+  }
+
+  return ip;
 }
 
 /**
- * Checks if the given IP matches allowed company network configurations
+ * Checks if a specific IP matches allowed company network configurations
  */
-function isIpAllowed(clientIp, rawConfig) {
+function checkIpMatch(clientIp, rawConfig) {
   if (!clientIp) return false;
-
-  // Localhost development fallback (only outside production)
-  const isLocalhost =
-    clientIp === '127.0.0.1' ||
-    clientIp === '::1' ||
-    clientIp === 'localhost';
-
-  if (isLocalhost && process.env.NODE_ENV !== 'production') {
-    return true;
-  }
 
   const config = getEffectiveNetworkConfig(rawConfig);
   const clientLower = clientIp.toLowerCase().trim();
@@ -97,7 +102,7 @@ function isIpAllowed(clientIp, rawConfig) {
   const matchV6 = allowedV6.some((prefix) => clientLower.startsWith(prefix));
   if (matchV6) return true;
 
-  // 2. IPv4 Address or Subnet check (e.g. 49.47.199.103, 192.168.29.)
+  // 2. IPv4 Address or Subnet check (e.g. 49.47.199.103, 49.47., 192.168.29.)
   const allowedV4 = (config.allowedIpv4Addresses || []).map((p) => p.trim()).filter(Boolean);
   const matchV4 = allowedV4.some((ip) => clientLower === ip.toLowerCase() || clientLower.startsWith(ip.toLowerCase()));
   if (matchV4) return true;
@@ -108,6 +113,36 @@ function isIpAllowed(clientIp, rawConfig) {
   if (matchSubnet) return true;
 
   return false;
+}
+
+/**
+ * Checks if the request IP matches allowed company network configurations.
+ * If request is on localhost, strictly inspects the machine's active network interfaces.
+ */
+function isIpAllowed(clientIp, rawConfig) {
+  if (!clientIp) return false;
+
+  const isLocalhost =
+    clientIp === '127.0.0.1' ||
+    clientIp === '::1' ||
+    clientIp === 'localhost';
+
+  if (isLocalhost) {
+    // If request is made locally, inspect the machine's actual active network interfaces
+    const ifaces = os.networkInterfaces();
+    const localIps = [];
+    for (const name of Object.keys(ifaces)) {
+      for (const net of ifaces[name] || []) {
+        if (!net.internal && net.address) {
+          localIps.push(net.address);
+        }
+      }
+    }
+    // Only allow if an active network interface matches the company network
+    return localIps.some((ip) => checkIpMatch(ip, rawConfig));
+  }
+
+  return checkIpMatch(clientIp, rawConfig);
 }
 
 /**
@@ -141,7 +176,7 @@ const verifyCompanyNetwork = async (req, res, next) => {
       return res.status(403).json({
         success: false,
         code: 'UNAUTHORIZED_NETWORK',
-        message: `Unauthorized Network: Attendance punch is restricted to the company office network (${wifiSsid}). Please connect to ${wifiSsid} Wi-Fi to punch.`,
+        message: `Different Network Detected: Attendance punch is restricted to the company office network (${wifiSsid}). Please connect to ${wifiSsid} Wi-Fi to punch.`,
         detectedIp: clientIp,
         clientIp: clientIp,
         allowedWifiSsid: wifiSsid,
@@ -164,6 +199,7 @@ module.exports = {
   verifyCompanyNetwork,
   getClientIp,
   isIpAllowed,
+  checkIpMatch,
   getEffectiveNetworkConfig,
   DEFAULT_COMPANY_NETWORK,
 };
