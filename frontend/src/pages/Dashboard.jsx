@@ -143,13 +143,14 @@ export default function Dashboard() {
     }
 
     if (currentNetStatus && currentNetStatus.networkRestrictionEnabled && !currentNetStatus.isAllowed) {
+      const wifiSsid = currentNetStatus.allowedWifiSsid || "HEXA_5G";
       setNetworkError({
-        title: "Unauthorized Network Detected",
-        message: `Unauthorized Network: Attendance punch is restricted to the company office network (${currentNetStatus.allowedWifiSsid || "HEXA_5G"}). Please connect to ${currentNetStatus.allowedWifiSsid || "HEXA_5G"} Wi-Fi to punch.`,
+        title: "Different Network Detected",
+        message: `Attendance punch is restricted to the company office network (${wifiSsid}). Please connect to ${wifiSsid} Wi-Fi to punch.`,
         clientIp: currentNetStatus.clientIp || "",
-        ssid: currentNetStatus.allowedWifiSsid || "HEXA_5G",
+        ssid: wifiSsid,
       });
-      toast.error(`Punch blocked: connect to ${currentNetStatus.allowedWifiSsid || "HEXA_5G"} Wi-Fi to punch.`);
+      toast.error(`Different network detected. Connect to ${wifiSsid} Wi-Fi to punch.`);
       return;
     }
 
@@ -180,16 +181,17 @@ export default function Dashboard() {
         errMsg.toLowerCase().includes("hexa_5g");
 
       if (isNetworkRestricted) {
+        const wifiSsid = err?.data?.allowedWifiSsid || networkStatus?.allowedWifiSsid || "HEXA_5G";
         setNetworkError({
-          title: "Unauthorized Network Detected",
+          title: "Different Network Detected",
           message:
             err?.data?.message ||
             errMsg ||
-            "Unauthorized Network: Attendance punch is restricted to the company office network (HEXA_5G). Please connect to HEXA_5G Wi-Fi to punch.",
+            `Attendance punch is restricted to the company office network (${wifiSsid}). Please connect to ${wifiSsid} Wi-Fi to punch.`,
           clientIp: err?.data?.clientIp || err?.data?.detectedIp || networkStatus?.clientIp || "",
-          ssid: err?.data?.allowedWifiSsid || networkStatus?.allowedWifiSsid || "HEXA_5G",
+          ssid: wifiSsid,
         });
-        toast.error("Punch blocked: Connect to HEXA_5G Wi-Fi to punch.", {
+        toast.error(`Different network detected: Connect to ${wifiSsid} Wi-Fi to punch.`, {
           duration: 5000,
         });
       } else {
@@ -272,23 +274,13 @@ export default function Dashboard() {
 
             {/* LIVE STATUS PILL & NETWORK BADGE */}
             <div className="flex flex-wrap items-center gap-2">
-              {networkStatus?.isAllowed === false ? (
-                <div
-                  className="inline-flex items-center gap-1.5 rounded-2xl bg-rose-500/25 px-3.5 py-2 text-xs font-bold text-rose-200 backdrop-blur-md border border-rose-400/40 shadow-sm"
-                  title={`Unauthorized Network (${networkStatus.clientIp || "Unknown"}). Attendance punch only works on HEXA_5G.`}
-                >
-                  <WifiOff size={13} className="text-rose-400 animate-pulse" />
-                  <span>Different Network (HEXA_5G Required)</span>
-                </div>
-              ) : (
-                <div
-                  className="inline-flex items-center gap-1.5 rounded-2xl bg-white/10 px-3.5 py-2 text-xs font-bold text-white/90 backdrop-blur-md border border-white/15 shadow-sm"
-                  title="Punches are secured and restricted to HEXA_5G office Wi-Fi"
-                >
-                  <Wifi size={13} className="text-emerald-400" />
-                  <span>HEXA_5G Connected</span>
-                </div>
-              )}
+              <div
+                className="inline-flex items-center gap-1.5 rounded-2xl bg-white/10 px-3.5 py-2 text-xs font-bold text-white/90 backdrop-blur-md border border-white/15 shadow-sm"
+                title="Attendance punch is restricted to HEXA_5G office Wi-Fi"
+              >
+                <Wifi size={13} className="text-emerald-400" />
+                <span>HEXA_5G Network</span>
+              </div>
 
               {!attendance?.checkIn && !isCheckedOut && (
                 <div className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2.5 text-xs font-bold text-white/80 backdrop-blur-md border border-white/10">
@@ -407,35 +399,7 @@ export default function Dashboard() {
         {/* ACTION CONTROLS */}
         {user?.role !== "admin" ? (
         <div style={{ background: "#ffffff", borderRadius: 16, padding: "20px 24px", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: "#0f172a", margin: 0 }}>Actions</h3>
-            {networkStatus?.isAllowed === false && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "#dc2626", background: "#fef2f2", padding: "4px 10px", borderRadius: 8, border: "1px solid #fecaca" }}>
-                <WifiOff size={13} /> Office Wi-Fi Required
-              </span>
-            )}
-          </div>
-
-          {networkStatus?.isAllowed === false && (
-            <div style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 10,
-              padding: "10px 14px",
-              background: "#fff1f2",
-              border: "1px solid #fecdd3",
-              borderRadius: 10,
-              color: "#9f1239",
-              fontSize: 12,
-              lineHeight: 1.5,
-              marginBottom: 14,
-            }}>
-              <AlertTriangle size={16} color="#e11d48" style={{ marginTop: 2, flexShrink: 0 }} />
-              <div>
-                <strong>Different Network Detected:</strong> You are connected to an external network (IP: <code style={{ fontWeight: 600 }}>{networkStatus.clientIp || "External"}</code>). Attendance punch will only work when connected to <strong>{networkStatus.allowedWifiSsid || "HEXA_5G"}</strong>.
-              </div>
-            </div>
-          )}
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: "#0f172a", margin: "0 0 16px" }}>Actions</h3>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
             {canPunchIn && (
@@ -689,7 +653,7 @@ export default function Dashboard() {
             </div>
 
             <h3 className="text-xl font-black text-center text-slate-900">
-              Unauthorized Network Detected
+              {networkError.title || "Different Network Detected"}
             </h3>
 
             <p className="mt-2 text-center text-xs sm:text-sm text-slate-600 leading-relaxed">
