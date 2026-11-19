@@ -45,9 +45,17 @@ export default function DashboardLayout({ children }) {
             title="View Profile"
             className="flex items-center gap-2 rounded-xl bg-white/5 p-1.5 pr-2.5 hover:bg-white/10 transition-all border border-white/10"
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-              {initials}
-            </div>
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user?.name || "User"}
+                className="w-8 h-8 rounded-lg object-cover shadow-sm border border-white/20"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                {initials}
+              </div>
+            )}
             <div className="text-left hidden xs:block">
               <p className="text-xs font-bold text-white max-w-[90px] truncate leading-tight">{user?.name || "Staff"}</p>
               <p className="text-[10px] text-white/50 capitalize leading-none">{user?.role || "Employee"}</p>

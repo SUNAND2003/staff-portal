@@ -21,7 +21,8 @@ exports.updateProfile = async (req, res) => {
   try {
     const allowedFields = [
       'name', 'email', 'phone', 'address', 'bio',
-      'designation', 'skills', 'emergencyContact',
+      'designation', 'department', 'skills', 'emergencyContact',
+      'avatarUrl',
     ];
 
     const updates = {};
@@ -43,23 +44,28 @@ exports.updateProfile = async (req, res) => {
 // ─── POST /api/profile/avatar ─────────────────────────────────────────────────
 exports.uploadAvatar = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded.' });
-    }
+    let avatarUrl = '';
 
-    const stored = await storeAvatar({
-      buffer: req.file.buffer,
-      mimetype: req.file.mimetype,
-      userId: String(req.user._id),
-    });
+    if (req.file) {
+      const stored = await storeAvatar({
+        buffer: req.file.buffer,
+        mimetype: req.file.mimetype,
+        userId: String(req.user._id),
+      });
+      avatarUrl = stored.url;
+    } else if (req.body && (req.body.avatarUrl || req.body.avatar)) {
+      avatarUrl = String(req.body.avatarUrl || req.body.avatar).trim();
+    } else {
+      return res.status(400).json({ message: 'No file or image data provided.' });
+    }
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { avatarUrl: stored.url },
+      { avatarUrl },
       { new: true }
     );
 
-    res.json({ avatarUrl: stored.url, user });
+    res.json({ avatarUrl, user });
   } catch (err) {
     if (err instanceof StorageNotConfiguredError) {
       return res.status(503).json({ message: err.message });

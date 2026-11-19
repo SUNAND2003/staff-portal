@@ -182,18 +182,19 @@ async function storeAvatar({ buffer, mimetype, userId }) {
     return { url: blob.url, storage: 'vercel-blob' };
   }
 
-  if (backend === 'unconfigured') {
-    throw new StorageNotConfiguredError(
-      'Avatar upload is unavailable: no persistent storage is configured for this deployment. ' +
-        'Either connect a Cloudinary account (set CLOUDINARY_URL) or a Vercel Blob store ' +
-        '(set BLOB_READ_WRITE_TOKEN) in the project environment variables, then redeploy.'
-    );
+  // If Cloudinary or Vercel Blob is not configured, or if running locally/on Render:
+  // Store as an inline Data URI directly in MongoDB. This ensures the avatar
+  // is permanently preserved, never lost on container restarts, and accessible
+  // across both the Vercel frontend and mobile without broken relative URLs.
+  try {
+    await fs.promises.mkdir(LOCAL_DIR, { recursive: true });
+    await fs.promises.writeFile(path.join(LOCAL_DIR, filename), buffer);
+  } catch (fsErr) {
+    // Disk write might fail on read-only environments; ignore gracefully
   }
 
-  // Development / self-hosted: keep the original behaviour (disk + /uploads route).
-  await fs.promises.mkdir(LOCAL_DIR, { recursive: true });
-  await fs.promises.writeFile(path.join(LOCAL_DIR, filename), buffer);
-  return { url: `/uploads/avatars/${filename}`, storage: 'local' };
+  const dataUri = `data:${mimetype};base64,${buffer.toString('base64')}`;
+  return { url: dataUri, storage: 'inline' };
 }
 
 /** `https://res.cloudinary.com/<cloud>/image/upload/v12/avatars/avatar-x.png` → `avatars/avatar-x` */

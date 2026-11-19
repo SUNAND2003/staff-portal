@@ -18,6 +18,7 @@ import useAuthStore from "../store/authStore";
 export default function Sidebar({ mobileOpen, setMobileOpen }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   const handleLogout = async () => {
     try {
@@ -109,12 +110,40 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
           })}
         </nav>
 
-        <div className="border-t border-white/10 pt-3">
+        <div className="border-t border-white/10 pt-3 flex flex-col gap-2">
+          {/* USER PROFILE PILL */}
+          <Link
+            to="/profile"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center gap-3 rounded-2xl bg-white/5 p-3 hover:bg-white/10 transition-all border border-white/10 text-white group"
+            title="View Profile"
+          >
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user?.name || "Avatar"}
+                className="h-10 w-10 rounded-xl object-cover border border-white/20 shadow-sm"
+              />
+            ) : (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-xs font-bold text-white shadow-sm">
+                {user?.name ? user.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() : "U"}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold leading-tight group-hover:text-emerald-400 transition-colors">
+                {user?.name || "Employee"}
+              </p>
+              <p className="truncate text-xs text-white/50 capitalize mt-0.5">
+                {user?.designation || user?.department || user?.role || "Staff"}
+              </p>
+            </div>
+          </Link>
+
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-4 rounded-2xl bg-red-600 px-4 py-4 text-sm font-bold text-white transition-all duration-300 hover:bg-red-500"
+            className="flex w-full items-center gap-4 rounded-2xl bg-red-600 px-4 py-3.5 text-sm font-bold text-white transition-all duration-300 hover:bg-red-500 cursor-pointer"
           >
-            <LogOut size={20} />
+            <LogOut size={18} />
             Logout
           </button>
         </div>

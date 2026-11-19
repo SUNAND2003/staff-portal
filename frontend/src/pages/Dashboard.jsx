@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { attendanceAPI, punchAPI } from "../services/api";
 import useAuthStore from "../store/authStore";
@@ -215,17 +216,32 @@ export default function Dashboard() {
         <div className="relative overflow-hidden rounded-[28px] sm:rounded-[34px] bg-gradient-to-r from-[#111827] via-[#1f2937] to-[#374151] p-6 sm:p-8 text-white shadow-xl">
           <div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/5 blur-xl pointer-events-none" />
           <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-white/70 text-xs font-semibold tracking-wider uppercase mb-1">
-                <Calendar size={14} className="text-emerald-400" />
-                <span>{todayDateFormatted}</span>
+            <div className="flex items-center gap-3.5 sm:gap-4">
+              <Link to="/profile" className="shrink-0 group" title="View or change profile picture">
+                {user?.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user?.name || "Avatar"}
+                    className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl object-cover border-2 border-white/25 shadow-md transition-all group-hover:scale-105 group-hover:border-emerald-400"
+                  />
+                ) : (
+                  <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-lg sm:text-xl font-black text-white shadow-md border-2 border-white/20 transition-all group-hover:scale-105">
+                    {user?.name ? user.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() : "U"}
+                  </div>
+                )}
+              </Link>
+              <div>
+                <div className="flex items-center gap-2 text-white/70 text-xs font-semibold tracking-wider uppercase mb-1">
+                  <Calendar size={14} className="text-emerald-400" />
+                  <span>{todayDateFormatted}</span>
+                </div>
+                <h1 className="text-xl sm:text-3xl lg:text-4xl font-black text-white">
+                  Welcome back, {user?.name?.split(" ")[0] || "Employee"}! 👋
+                </h1>
+                <p className="mt-1 text-xs sm:text-sm text-white/70">
+                  {user?.department ? `${user.department} • ` : ""}Track your daily work hours and punch activity
+                </p>
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">
-                Welcome back, {user?.name?.split(" ")[0] || "Employee"}! 👋
-              </h1>
-              <p className="mt-1 text-xs sm:text-sm text-white/70">
-                {user?.department ? `${user.department} • ` : ""}Track your daily work hours and punch activity
-              </p>
             </div>
 
             {/* LIVE STATUS PILL & NETWORK BADGE */}

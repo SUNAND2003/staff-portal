@@ -26,7 +26,7 @@ export default function AdminSidebar({
   mobileOpen,
   setMobileOpen,
 }) {
-
+  const { user } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -197,31 +197,54 @@ export default function AdminSidebar({
 
         </nav>
 
-        {/* LOGOUT */}
-        <div className="px-4 pb-4">
+        {/* PROFILE & LOGOUT */}
+        <div className="px-4 pb-4 flex flex-col gap-2">
+          <div className="mb-2 h-px bg-white/10" />
 
-          <div className="mb-3 h-px bg-white/10" />
+          {/* ADMIN PROFILE PILL */}
+          <Link
+            to="/profile"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center gap-3 rounded-2xl bg-white/5 p-3 hover:bg-white/10 transition-all border border-white/10 text-white group"
+            title="View Profile"
+          >
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user?.name || "Admin"}
+                className="h-10 w-10 rounded-xl object-cover border border-white/20 shadow-sm"
+              />
+            ) : (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 to-orange-600 text-xs font-bold text-white shadow-sm">
+                {user?.name ? user.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() : "A"}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold leading-tight group-hover:text-amber-400 transition-colors">
+                {user?.name || "Administrator"}
+              </p>
+              <p className="truncate text-xs text-white/50 capitalize mt-0.5">
+                {user?.role || "Admin"}
+              </p>
+            </div>
+          </Link>
 
           <button
             onClick={handleLogout}
             className="
               flex w-full items-center gap-4
               rounded-2xl
-              bg-red-600 px-4 py-4
+              bg-red-600 px-4 py-3
               text-sm font-bold text-white
               transition-all duration-300
-              hover:bg-red-500
+              hover:bg-red-500 cursor-pointer
             "
           >
-
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500">
-              <LogOut size={18} />
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-500">
+              <LogOut size={16} />
             </span>
-
             Logout
-
           </button>
-
         </div>
 
       </aside>
